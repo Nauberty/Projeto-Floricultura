@@ -1,0 +1,9 @@
+{
+  "name": "projeto-floricultura",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cartão virtual com flores: assistente de criação e página do cartão para quem recebe.",
+  "scripts": {
+    "start": "node scripts/servidor.js"
+  }
+}

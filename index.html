@@ -84,6 +84,7 @@
     gap:28px;
     align-items:start;
   }
+  .layout > *{ min-width:0; } /* conteúdo longo (ex: link do cartão) não estica a coluna */
 
   @media (max-width:940px){
     .layout{grid-template-columns:1fr;}
@@ -557,6 +558,26 @@
 
   /* print-only QR area */
   #printArea{ display:none; }
+  /* botões/links: acessibilidade e estados */
+  button.player-play{ border:none; padding:0; font:inherit; }
+  a.btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; text-decoration:none; }
+  .btn:disabled, a.btn[aria-disabled="true"]{ opacity:0.45; cursor:not-allowed; pointer-events:none; }
+  .btn:focus-visible, .chip:focus-visible, .dropzone:focus-visible, .player-play:focus-visible{
+    outline:2px solid var(--rose-deep); outline-offset:2px;
+  }
+  .hint.error:empty{ display:none; }
+  .dropzone.dragging{ border-color:var(--sage); background:#EEF1E7; }
+
+  .final-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+  .final-actions .btn{ flex:1 1 180px; }
+  .final-link-box input{ min-width:0; text-overflow:ellipsis; }
+
+  .pv-video{
+    position:relative; width:100%; aspect-ratio:16/9; margin-top:10px;
+    border-radius:10px; overflow:hidden; background:#111;
+  }
+  .pv-video iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+
   @media print{
     body.printing-qr > *:not(#printArea){ display:none !important; }
     body.printing-qr{ padding:0; background:#fff; }
@@ -636,13 +657,14 @@
 
           <div class="player" id="pvPlayer" style="display:none;">
             <div class="player-thumb" id="pvThumb"></div>
-            <div class="player-play" id="pvPlayBtn">▶</div>
+            <button type="button" class="player-play" id="pvPlayBtn" aria-label="Tocar trecho">▶</button>
             <div class="player-meta">
               <div class="player-title" id="pvSongTitle">—</div>
               <div class="player-sub" id="pvSongSub">—</div>
             </div>
             <div class="eq paused" id="pvEq"><span></span><span></span><span></span></div>
           </div>
+          <div class="pv-video" id="pvVideo" style="display:none;"></div>
         </div>
 
         <div class="stage-url" id="pvFullUrl">floriculturaalameda.com.br/cartao/seu-link-aqui</div>
@@ -658,13 +680,20 @@
   </div>
 
 <script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="js/cartao-shared.js"></script>
 <script>
 (function(){
 
   // Chave da YouTube Data API v3 — definida em config.js (fora do git). Sem ela, usa noembed.com.
   const YT_API_KEY = (window.APP_CONFIG && window.APP_CONFIG.YOUTUBE_API_KEY) || '';
 
+  const { CATEGORIES, escapeHtml, slugify, secToMMSS, formatDateCounter, buildCardUrl, CardStore, newCardId } = window.Cartao;
+  const DRAFT_KEY = 'floricultura:draft';
+
   const state = {
+    id: newCardId(),
+    slugRaw: '',
     slug: '',
     title: '',
     senderName: '',
@@ -678,15 +707,6 @@
     emojis: [],
     music: null // { videoId, url, start(seconds), duration(seconds), title }
   };
-
-  const CATEGORIES = [
-    { id:'aniversario', label:'Aniversário', icon:'🎂' },
-    { id:'amor', label:'Amor', icon:'🌹' },
-    { id:'agradecimento', label:'Agradecimento', icon:'🌼' },
-    { id:'condolencias', label:'Condolências', icon:'🕊️' },
-    { id:'so-porque-sim', label:'Só porque sim', icon:'🌷' },
-    { id:'boas-vindas', label:'Boas-vindas / Novo lar', icon:'🌿' },
-  ];
 
   const EMOJIS = ['🌸','🌹','🌻','🌷','🌺','💐','🍃','✨','💛','🤍'];
 
@@ -713,13 +733,6 @@
     return e;
   };
 
-  const slugify = (str) => str
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^a-zA-Z0-9\s-]/g,'')
-    .trim();
-
-  const pad2 = (n) => String(n).padStart(2,'0');
-  const secToMMSS = (s) => `${pad2(Math.floor(s/60))}:${pad2(Math.floor(s%60))}`;
   const mmssToSec = (str) => {
     const m = String(str).trim().match(/^(\d{1,3}):([0-5]?\d)$/);
     if(!m) return null;
@@ -742,7 +755,6 @@
       if(i < current) node.classList.add('done');
       if(i === current) node.classList.add('active');
       node.innerHTML = `<div class="dot"><span>${i+1}</span></div><div class="step-label">${s.label}</div>`;
-      const reachable = i <= current || (current === FINAL_INDEX);
       node.style.cursor = i <= current ? 'pointer' : 'default';
       node.addEventListener('click', () => { if(i <= current){ current = i; render(); }});
       t.appendChild(node);
@@ -796,10 +808,11 @@
         'Escolha o endereço único do seu cartão — é o que vai aparecer no link enviado.',
         `
         <div class="field">
-          <input type="text" id="inpSlug" placeholder="Ex: joana-e-marcos ou obrigado-mae" value="${state.slug}">
+          <input type="text" id="inpSlug" maxlength="80" placeholder="Ex: Joana e Marcos" value="${escapeHtml(state.slugRaw)}">
         </div>
         <div class="hint" id="slugCount">0/60 caracteres</div>
-        <div class="hint warn">⚠️ Este campo é o identificador do link — evite espaços duplos e caracteres especiais.</div>
+        <div class="hint" id="slugResult"></div>
+        <div class="hint error" id="stepError" role="alert"></div>
         `);
     }
 
@@ -808,9 +821,10 @@
         'O título que vai aparecer em destaque, logo no topo do cartão.',
         `
         <div class="field">
-          <input type="text" id="inpTitle" placeholder="Ex: Feliz Aniversário, Ana!" value="${state.title}">
+          <input type="text" id="inpTitle" maxlength="80" placeholder="Ex: Feliz Aniversário, Ana!" value="${escapeHtml(state.title)}">
         </div>
         <div class="hint" id="titleCount">0/80 caracteres</div>
+        <div class="hint error" id="stepError" role="alert"></div>
         `);
     }
 
@@ -821,14 +835,14 @@
         <div class="row2">
           <div class="field">
             <label class="field-label">Seu nome</label>
-            <input type="text" id="inpSenderName" placeholder="Ex: Marcos" value="${state.senderName}">
+            <input type="text" id="inpSenderName" maxlength="60" placeholder="Ex: Marcos" value="${escapeHtml(state.senderName)}">
           </div>
           <div class="field">
             <label class="field-label">Contato (opcional)</label>
-            <input type="tel" id="inpSenderContact" placeholder="WhatsApp ou e-mail" value="${state.senderContact}">
+            <input type="tel" id="inpSenderContact" maxlength="80" placeholder="WhatsApp ou e-mail" value="${escapeHtml(state.senderContact)}">
           </div>
         </div>
-        <div class="hint">Usamos isso só para assinar o cartão — não aparece publicamente sem sua autorização.</div>
+        <div class="hint">O nome assina o cartão. O contato é só para a floricultura falar com você — ele não vai no link nem aparece para quem recebe.</div>
         `);
     }
 
@@ -840,7 +854,7 @@
 
     if(current === 4){
       html = wrap('Data Especial',
-        'Quer mostrar uma contagem de dias no cartão? (ex: "há 3 anos juntos")',
+        'Quer mostrar um contador no cartão? Datas passadas mostram "há quanto tempo" (ex: 3 anos juntos); datas futuras mostram quanto falta.',
         `
         <div class="toggle-row">
           <div class="switch ${state.hasDate ? 'on':''}" id="dateSwitch"></div>
@@ -848,8 +862,8 @@
         </div>
         <div class="field" id="dateField" style="display:${state.hasDate ? 'block':'none'}; margin-top:14px;">
           <label class="field-label">Data de referência</label>
-          <input type="date" id="inpDate" value="${state.eventDate}">
-          <div class="hint">O cartão vai calcular automaticamente há quanto tempo é a data.</div>
+          <input type="date" id="inpDate" value="${escapeHtml(state.eventDate)}">
+          <div class="hint">O cartão calcula o contador automaticamente no dia em que for aberto.</div>
         </div>
         `);
     }
@@ -864,7 +878,7 @@
           <div class="style-pill" data-style="script">Manuscrita</div>
         </div>
         <div class="field">
-          <textarea id="inpMessage" maxlength="400" placeholder="Escreva sua mensagem...">${state.message}</textarea>
+          <textarea id="inpMessage" maxlength="400" placeholder="Escreva sua mensagem...">${escapeHtml(state.message)}</textarea>
         </div>
         <div class="charcount" id="msgCount">0/400 caracteres</div>
         `);
@@ -874,12 +888,13 @@
       html = wrap('Fotos',
         'Adicione até 4 fotos para acompanhar o cartão. A primeira aparece em destaque.',
         `
-        <div class="dropzone" id="dropzone">
+        <div class="dropzone" id="dropzone" role="button" tabindex="0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
           <p><strong>Clique para enviar</strong> ou arraste as fotos aqui</p>
         </div>
         <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
         <div class="thumbs" id="thumbs"></div>
+        <div class="hint error" id="stepError" role="alert"></div>
         `);
     }
 
@@ -896,7 +911,7 @@
         `
         <div class="field">
           <label class="field-label">Link do YouTube</label>
-          <input type="text" id="inpYtUrl" placeholder="https://www.youtube.com/watch?v=..." value="${m ? m.url : ''}">
+          <input type="text" id="inpYtUrl" placeholder="https://www.youtube.com/watch?v=..." value="${m ? escapeHtml(m.url) : ''}">
         </div>
         <div class="hint" id="ytHint">${m ? '' : 'Cole um link do YouTube para continuar.'}</div>
 
@@ -931,29 +946,38 @@
     }
 
     if(current === FINAL_INDEX){
-      const fullUrl = 'floriculturaalameda.com.br/cartao/' + (state.slug || 'seu-link');
       html = `
         <div class="step-eyebrow">Passo ${current+1} de ${STEPS.length}</div>
         <h2 class="step-title">Cartão pronto! 🌸</h2>
-        <p class="step-desc">Copie o link para enviar por mensagem, ou imprima o QR code para colar junto com o buquê.</p>
+        <p class="step-desc">Envie o link por mensagem ou imprima o QR code para colar junto com o buquê.</p>
 
-        <label class="field-label">Link do cartão</label>
+        <label class="field-label" for="finalLinkInput">Link do cartão</label>
         <div class="final-link-box">
-          <input type="text" id="finalLinkInput" readonly value="${fullUrl}">
-          <button class="btn btn-primary" id="btnCopyLink">Copiar link</button>
+          <input type="text" id="finalLinkInput" readonly value="Gerando link…">
+          <button class="btn btn-primary" id="btnCopyLink" disabled>Copiar link</button>
         </div>
-        <div class="hint ok" id="copyFeedback" style="display:none;">Link copiado! ✅</div>
+        <div class="hint ok" id="copyFeedback" role="status" style="display:none;">Link copiado! ✅</div>
+
+        <div class="final-actions">
+          <a class="btn btn-ghost" id="btnOpenCard" target="_blank" rel="noopener" aria-disabled="true">👁️ Ver como quem recebe</a>
+          <a class="btn btn-ghost" id="btnWhatsApp" target="_blank" rel="noopener" aria-disabled="true">💬 Enviar no WhatsApp</a>
+        </div>
 
         <div class="qr-section">
-          <div class="qr-box" id="qrBox"><img id="qrImg" src="" alt="QR code do cartão"></div>
+          <div class="qr-box" id="qrBox"><img id="qrImg" alt="QR code do cartão"></div>
           <div class="qr-info">
             <p>Escaneie para abrir o cartão direto no celular — ideal para colar uma etiqueta no buquê.</p>
             <div class="qr-actions">
-              <button class="btn btn-ghost" id="btnPrintQr" type="button">🖨️ Imprimir QR Code</button>
+              <button class="btn btn-ghost" id="btnPrintQr" type="button" disabled>🖨️ Imprimir QR Code</button>
               <button class="btn btn-ghost" id="btnEditCard" type="button">✎ Editar cartão</button>
+              <button class="btn btn-ghost" id="btnNewCard" type="button">＋ Criar outro cartão</button>
             </div>
           </div>
         </div>
+
+        ${state.photos.length ? `
+        <div class="hint warn">📷 Modo demonstração: as fotos ficam salvas só neste aparelho. Para que elas cheguem a quem recebe, o projeto precisa de um servidor (próxima etapa).</div>` : ''}
+        <div class="hint warn" id="saveWarn" style="display:none;">⚠️ O navegador não deixou salvar as fotos (espaço cheio). O link funciona normalmente, mas sem as fotos.</div>
       `;
     }
 
@@ -967,9 +991,15 @@
     if(current === 0){
       const inp = document.getElementById('inpSlug');
       const count = document.getElementById('slugCount');
+      const result = document.getElementById('slugResult');
       const update = () => {
-        state.slug = slugify(inp.value).slice(0,60);
+        state.slugRaw = inp.value;
+        state.slug = slugify(inp.value).slice(0,60).replace(/-+$/, '');
         count.textContent = `${state.slug.length}/60 caracteres`;
+        result.innerHTML = state.slug
+          ? `Endereço do cartão: <b>/${escapeHtml(state.slug)}</b>`
+          : 'Acentos, espaços e símbolos são ajustados automaticamente.';
+        clearStepError();
         renderPreview();
       };
       inp.addEventListener('input', update);
@@ -982,6 +1012,7 @@
       const update = () => {
         state.title = inp.value.slice(0,80);
         count.textContent = `${state.title.length}/80 caracteres`;
+        clearStepError();
         renderPreview();
       };
       inp.addEventListener('input', update);
@@ -1049,19 +1080,19 @@
       const dz = document.getElementById('dropzone');
       const input = document.getElementById('fileInput');
       dz.addEventListener('click', () => input.click());
+      dz.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); input.click(); }
+      });
+      dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragging'); });
+      dz.addEventListener('dragleave', () => dz.classList.remove('dragging'));
+      dz.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dz.classList.remove('dragging');
+        addPhotos(e.dataTransfer.files);
+      });
       input.addEventListener('change', (e) => {
-        const files = Array.from(e.target.files).slice(0, 4 - state.photos.length);
-        files.forEach(f => {
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            if(state.photos.length < 4){
-              state.photos.push(ev.target.result);
-              renderThumbs();
-              renderPreview();
-            }
-          };
-          reader.readAsDataURL(f);
-        });
+        addPhotos(e.target.files);
+        input.value = '';
       });
       renderThumbs();
     }
@@ -1243,13 +1274,104 @@
       .catch(() => { /* sem internet ou bloqueado — mantém rótulo genérico */ });
   }
 
+  /* ---------------- FOTOS ---------------- */
+  const MAX_PHOTOS = 4;
+  const PHOTO_MAX_SIDE = 1000; // px — suficiente para o cartão e leve para salvar
+
+  // Redimensiona e converte para JPEG: uma foto de celular (~4 MB) vira ~100 KB.
+  function compressImage(file){
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagem inválida')); };
+      img.src = url;
+    });
+  }
+
+  async function addPhotos(fileList){
+    const files = Array.from(fileList || []).filter(f => f.type.startsWith('image/'));
+    const room = MAX_PHOTOS - state.photos.length;
+    if(!files.length) return;
+    if(room <= 0){ showStepError(`Você já adicionou ${MAX_PHOTOS} fotos. Remova uma para trocar.`); return; }
+    if(files.length > room) showStepError(`Só cabem mais ${room} foto${room === 1 ? '' : 's'} — as demais foram ignoradas.`);
+    else clearStepError();
+
+    for(const f of files.slice(0, room)){
+      try{
+        state.photos.push(await compressImage(f));
+      } catch(e){
+        showStepError(`Não conseguimos abrir "${f.name}". Tente outra imagem.`);
+      }
+      renderThumbs();
+      renderPreview();
+    }
+  }
+
+  /* ---------------- ERROS INLINE ---------------- */
+  function showStepError(msg){
+    const box = document.getElementById('stepError');
+    if(box){ box.textContent = msg; }
+    else { alert(msg); }
+  }
+  function clearStepError(){
+    const box = document.getElementById('stepError');
+    if(box) box.textContent = '';
+  }
+
+  /* ---------------- RASCUNHO (não perde nada ao recarregar) ---------------- */
+  let draftTimer = null;
+  function saveDraft(){
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => {
+      const data = { state, current };
+      try{ localStorage.setItem(DRAFT_KEY, JSON.stringify(data)); }
+      catch(e){
+        // Fotos podem estourar a cota: salva o resto mesmo assim
+        try{ localStorage.setItem(DRAFT_KEY, JSON.stringify({ state: { ...state, photos: [] }, current })); } catch(e2){}
+      }
+    }, 300);
+  }
+
+  function loadDraft(){
+    try{
+      const data = JSON.parse(localStorage.getItem(DRAFT_KEY));
+      if(!data || !data.state) return;
+      Object.assign(state, data.state);
+      current = Math.min(Math.max(0, data.current | 0), FINAL_INDEX);
+      if(current > 0 && !state.slug) current = 0;
+      if(current > 1 && !state.title) current = 1;
+    } catch(e){ /* rascunho corrompido: começa do zero */ }
+  }
+
+  function resetCard(){
+    try{ localStorage.removeItem(DRAFT_KEY); } catch(e){}
+    Object.assign(state, {
+      id: newCardId(), slugRaw: '', slug: '', title: '', senderName: '', senderContact: '',
+      category: '', hasDate: false, eventDate: '', message: '', msgStyle: 'sans',
+      photos: [], emojis: [], music: null,
+    });
+    current = 0;
+    stopPreviewMusic();
+    render();
+    renderPreview();
+  }
+
   function renderThumbs(){
     const t = document.getElementById('thumbs');
     if(!t) return;
     t.innerHTML = '';
     state.photos.forEach((src, i) => {
       const th = el('div','thumb');
-      th.innerHTML = `<img src="${src}"><button data-i="${i}">✕</button>`;
+      th.innerHTML = `<img src="${src}" alt="Foto ${i+1}"><button type="button" aria-label="Remover foto ${i+1}">✕</button>`;
       th.querySelector('button').addEventListener('click', () => {
         state.photos.splice(i,1);
         renderThumbs();
@@ -1260,46 +1382,92 @@
   }
 
   /* ---------------- FINAL STEP (link + qr) ---------------- */
-  function fullPublicUrl(){
-    return 'floriculturaalameda.com.br/cartao/' + (state.slug || 'seu-link');
+  // Dados que vão no link — sem o contato (privado) e sem as fotos (pesadas demais para um link).
+  function buildCardPayload(){
+    const m = state.music;
+    return {
+      v: window.Cartao.CARD_VERSION,
+      id: state.id,
+      slug: state.slug,
+      title: state.title.trim(),
+      from: state.senderName.trim(),
+      category: state.category,
+      date: state.hasDate && state.eventDate ? state.eventDate : null,
+      message: state.message,
+      style: state.msgStyle,
+      emojis: state.emojis,
+      photoCount: state.photos.length,
+      music: m && m.videoId ? { id: m.videoId, start: m.start, dur: m.duration, title: m.title || null, channel: m.channel || null } : null,
+    };
   }
 
-  function bindFinalStep(){
+  // QR gerado no próprio navegador: o conteúdo do cartão não passa por nenhum serviço externo.
+  function makeQrDataUrl(text){
+    if(typeof window.qrcode !== 'function') return null;
+    const qr = window.qrcode(0, 'L');
+    qr.addData(text, 'Byte');
+    qr.make();
+    const cell = Math.max(2, Math.floor(480 / qr.getModuleCount()));
+    return qr.createDataURL(cell, cell * 2);
+  }
+
+  async function bindFinalStep(){
     const linkInput = document.getElementById('finalLinkInput');
     const copyBtn = document.getElementById('btnCopyLink');
     const feedback = document.getElementById('copyFeedback');
     const qrImg = document.getElementById('qrImg');
+    const qrBox = document.getElementById('qrBox');
     const printBtn = document.getElementById('btnPrintQr');
-    const editBtn = document.getElementById('btnEditCard');
+    const openBtn = document.getElementById('btnOpenCard');
+    const waBtn = document.getElementById('btnWhatsApp');
 
-    const url = fullPublicUrl();
-    const fullHttpUrl = 'https://' + url;
+    document.getElementById('btnEditCard').addEventListener('click', () => { current = 0; render(); });
+    document.getElementById('btnNewCard').addEventListener('click', () => {
+      if(confirm('Começar um cartão novo? O cartão atual continua funcionando pelo link já gerado.')) resetCard();
+    });
+
+    const card = buildCardPayload();
+    const saved = CardStore.save(card, state.photos);
+    if(!saved && state.photos.length) document.getElementById('saveWarn').style.display = 'block';
+
+    const url = await buildCardUrl(card);
+    if(current !== FINAL_INDEX) return; // usuário saiu do passo enquanto o link era gerado
+
     linkInput.value = url;
-    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(fullHttpUrl)}`;
+    copyBtn.disabled = false;
+    printBtn.disabled = false;
+    openBtn.href = url;
+    openBtn.removeAttribute('aria-disabled');
+    const waText = `${state.title ? state.title + ' — ' : ''}Você recebeu um cartão com flores 🌸 ${url}`;
+    waBtn.href = `https://wa.me/?text=${encodeURIComponent(waText)}`;
+    waBtn.removeAttribute('aria-disabled');
 
+    const qrSrc = makeQrDataUrl(url);
+    if(qrSrc){
+      qrImg.src = qrSrc;
+    } else {
+      qrBox.innerHTML = '<span class="hint">QR code indisponível sem internet.</span>';
+      printBtn.disabled = true;
+    }
+
+    const showCopied = () => {
+      feedback.style.display = 'block';
+      setTimeout(() => feedback.style.display = 'none', 2500);
+    };
     copyBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(fullHttpUrl).then(() => {
-        feedback.style.display = 'block';
-        setTimeout(() => feedback.style.display = 'none', 2500);
-      }).catch(() => {
+      navigator.clipboard.writeText(url).then(showCopied).catch(() => {
         linkInput.select();
         document.execCommand('copy');
-        feedback.style.display = 'block';
-        setTimeout(() => feedback.style.display = 'none', 2500);
+        showCopied();
       });
     });
 
     printBtn.addEventListener('click', () => {
       document.getElementById('printQrImg').src = qrImg.src;
       document.getElementById('printCardTitle').textContent = state.title || 'Cartão com Flores';
-      document.getElementById('printCardUrl').textContent = url;
+      document.getElementById('printCardUrl').textContent = 'Aponte a câmera do celular para abrir o cartão';
       document.body.classList.add('printing-qr');
       window.print();
-    });
-
-    editBtn.addEventListener('click', () => {
-      current = 0;
-      render();
     });
   }
 
@@ -1314,9 +1482,9 @@
     const catObj = CATEGORIES.find(c => c.id === state.category);
     document.getElementById('pvCat').innerHTML = catObj ? `<span>${catObj.icon}</span> ${catObj.label}` : 'Sem categoria';
     document.getElementById('pvTitle').textContent = state.title || 'Título do seu cartão';
-    document.getElementById('pvSlug').textContent = '/cartao/' + (state.slug || '...');
-    document.getElementById('urlPreviewInline').textContent = 'floriculturaalameda.com.br/cartao/' + (state.slug || '...');
-    document.getElementById('pvFullUrl').textContent = 'floriculturaalameda.com.br/cartao/' + (state.slug || 'seu-link-aqui');
+    document.getElementById('pvSlug').textContent = '/' + (state.slug || '...');
+    document.getElementById('urlPreviewInline').textContent = 'cartao/' + (state.slug || '...');
+    document.getElementById('pvFullUrl').textContent = 'cartao/' + (state.slug || 'seu-link-aqui');
 
     const photoBox = document.getElementById('pvPhoto');
     if(state.photos.length){
@@ -1326,12 +1494,10 @@
     }
 
     const dateBox = document.getElementById('pvDate');
-    if(state.hasDate && state.eventDate){
-      const d = new Date(state.eventDate + 'T00:00:00');
-      const now = new Date();
-      const diffDays = Math.max(0, Math.round((now - d) / 86400000));
+    const counter = state.hasDate ? formatDateCounter(state.eventDate) : '';
+    if(counter){
       dateBox.style.display = 'flex';
-      dateBox.innerHTML = `🗓️ ${diffDays} dia${diffDays === 1 ? '' : 's'} desde ${d.toLocaleDateString('pt-BR')}`;
+      dateBox.textContent = `🗓️ ${counter}`;
     } else {
       dateBox.style.display = 'none';
     }
@@ -1340,9 +1506,7 @@
     msg.textContent = state.message || 'Sua mensagem vai aparecer aqui conforme você escreve…';
     msg.className = 'card-msg' + (state.msgStyle === 'serif' ? ' style-serif' : state.msgStyle === 'script' ? ' style-script' : '');
 
-    document.getElementById('pvFrom').innerHTML = state.senderName
-      ? `Com carinho, <b>${state.senderName}</b>`
-      : `Com carinho, <b>seu nome</b>`;
+    document.getElementById('pvFrom').innerHTML = `Com carinho, <b>${escapeHtml(state.senderName.trim() || 'seu nome')}</b>`;
 
     document.getElementById('pvEmojis').textContent = state.emojis.join(' ');
 
@@ -1356,14 +1520,32 @@
     } else {
       player.style.display = 'none';
     }
+    // Trocou ou removeu a música: para o que estava tocando na prévia
+    if(playing && (!state.music || state.music.videoId !== playing)) stopPreviewMusic();
 
     renderSprig();
+    saveDraft();
   }
 
+  // ▶ da prévia toca o trecho de verdade, num player do YouTube visível dentro do cartão.
+  const pvVideo = document.getElementById('pvVideo');
+  function stopPreviewMusic(){
+    playing = false;
+    pvVideo.innerHTML = '';
+    pvVideo.style.display = 'none';
+    document.getElementById('pvPlayBtn').textContent = '▶';
+    document.getElementById('pvPlayBtn').setAttribute('aria-label', 'Tocar trecho');
+    document.getElementById('pvEq').classList.add('paused');
+  }
   document.getElementById('pvPlayBtn').addEventListener('click', () => {
-    playing = !playing;
-    document.getElementById('pvPlayBtn').textContent = playing ? '❚❚' : '▶';
-    document.getElementById('pvEq').classList.toggle('paused', !playing);
+    const m = state.music;
+    if(playing || !m){ stopPreviewMusic(); return; }
+    playing = m.videoId;
+    pvVideo.innerHTML = `<iframe src="https://www.youtube.com/embed/${m.videoId}?autoplay=1&start=${m.start}&end=${m.start + m.duration}&rel=0&playsinline=1" title="Música do cartão" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+    pvVideo.style.display = 'block';
+    document.getElementById('pvPlayBtn').textContent = '❚❚';
+    document.getElementById('pvPlayBtn').setAttribute('aria-label', 'Parar trecho');
+    document.getElementById('pvEq').classList.remove('paused');
   });
 
   /* ---------------- NAV ---------------- */
@@ -1390,21 +1572,29 @@
     if(current > 0){ current--; render(); }
   });
 
+  function validateStep(){
+    if(current === 0 && state.slug.length < 3) return 'Escolha um nome com pelo menos 3 letras ou números.';
+    if(current === 1 && !state.title.trim()) return 'Dê um título ao seu cartão antes de continuar.';
+    return null;
+  }
+
   document.getElementById('btnNext').addEventListener('click', () => {
-    if(current === 0 && !state.slug){
-      alert('Escolha um nome para a página antes de continuar.');
-      return;
-    }
-    if(current === 1 && !state.title){
-      alert('Dê um título ao seu cartão antes de continuar.');
+    const error = validateStep();
+    if(error){
+      showStepError(error);
+      const field = document.querySelector('#step-content input');
+      if(field) field.focus();
       return;
     }
     if(current < STEPS.length - 1){
       current++;
       render();
+      // No celular o assistente fica em cima da prévia: volta ao topo do passo
+      document.querySelector('.wizard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   });
 
+  loadDraft();
   render();
   renderPreview();
 
