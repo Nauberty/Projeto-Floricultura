@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projeto-Floricultura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF6ED;
+    --paper-deep:#F0E7D3;
+    --paper-edge:#E4D8BC;
+    --ink:#2B2A25;
+    --ink-soft:#6b6759;
+    --sage:#6E7F5C;
+    --sage-deep:#4E5C41;
+    --rose:#C97B84;
+    --rose-deep:#A85763;
+    --gold:#B08947;
+    --plum:#362331;
+    --plum-deep:#251722;
+    --radius-lg:22px;
+    --radius-md:14px;
+    --shadow-soft:0 18px 40px -18px rgba(43,42,37,0.35);
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 12% 8%, rgba(110,127,92,0.10), transparent 45%),
+      radial-gradient(circle at 88% 92%, rgba(201,123,132,0.12), transparent 40%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:48px 24px 80px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+
+  .brand{
+    max-width:1180px;
+    margin:0 auto 34px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .brand svg{width:34px;height:34px;flex:none;}
+  .brand-text{display:flex;flex-direction:column;line-height:1.15;}
+  .brand-text .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--sage-deep);
+  }
+  .brand-text .name{
+    font-family:'Fraunces',serif;
+    font-size:22px;
+    font-weight:600;
+  }
+
+  .layout{
+    max-width:1180px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:1.55fr 1fr;
+    gap:28px;
+    align-items:start;
+  }
+
+  @media (max-width:940px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  /* ---------- LEFT: WIZARD ---------- */
+  .wizard{
+    background:var(--paper);
+    border:1px solid var(--paper-edge);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-soft);
+    padding:38px 40px 34px;
+    position:relative;
+    overflow:hidden;
+  }
+  @media (max-width:600px){ .wizard{padding:26px 20px 24px;} }
+
+  .sprig{
+    position:absolute;
+    top:0; right:0;
+    width:150px;
+    height:150px;
+    opacity:0.9;
+    pointer-events:none;
+    transform:translate(18%,-22%);
+  }
+  .sprig path, .sprig ellipse{ transition:opacity .5s ease, transform .5s ease; }
+
+  /* step tracker */
+  .tracker{
+    display:flex;
+    align-items:flex-start;
+    gap:0;
+    margin-bottom:30px;
+    position:relative;
+    overflow-x:auto;
+    padding-bottom:4px;
+  }
+  .tracker::-webkit-scrollbar{height:0;}
+  .step-node{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    flex:1;
+    min-width:64px;
+    position:relative;
+  }
+  .step-node:not(:last-child)::after{
+    content:'';
+    position:absolute;
+    top:15px;
+    left:calc(50% + 20px);
+    right:calc(-50% + 20px);
+    height:2px;
+    background:var(--paper-edge);
+    z-index:0;
+  }
+  .step-node.done:not(:last-child)::after{ background:var(--sage); }
+  .dot{
+    width:30px;height:30px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;font-weight:500;
+    background:var(--paper);
+    border:2px solid var(--paper-edge);
+    color:var(--ink-soft);
+    z-index:1;
+    transition:all .25s ease;
+  }
+  .step-node.active .dot{
+    border-color:var(--sage);
+    background:var(--sage);
+    color:#fff;
+    box-shadow:0 0 0 4px rgba(110,127,92,0.18);
+  }
+  .step-node.done .dot{
+    border-color:var(--sage);
+    background:var(--paper);
+    color:var(--sage-deep);
+  }
+  .step-node.done .dot::after{ content:'✓'; }
+  .step-node.done .dot span{ display:none; }
+  .step-label{
+    font-size:10.5px;
+    color:var(--ink-soft);
+    text-align:center;
+    max-width:80px;
+    line-height:1.25;
+  }
+  .step-node.active .step-label{ color:var(--ink); font-weight:600; }
+
+  /* step content */
+  .step-eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--rose-deep);
+    margin-bottom:8px;
+  }
+  .step-title{
+    font-family:'Fraunces',serif;
+    font-size:30px;
+    font-weight:600;
+    margin:0 0 10px;
+  }
+  .step-desc{
+    color:var(--ink-soft);
+    font-size:14.5px;
+    line-height:1.6;
+    margin:0 0 26px;
+    max-width:520px;
+  }
+
+  .field{ margin-bottom:8px; }
+  input[type=text], input[type=tel], input[type=email], input[type=date], textarea, select{
+    width:100%;
+    background:var(--paper-deep);
+    border:1.5px solid var(--paper-edge);
+    border-radius:var(--radius-md);
+    padding:14px 16px;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .2s ease, background .2s ease;
+  }
+  input::placeholder, textarea::placeholder{ color:#a6a08d; }
+  input:focus, textarea:focus, select:focus{
+    border-color:var(--sage);
+    background:var(--paper);
+  }
+  textarea{ resize:vertical; min-height:120px; line-height:1.55; }
+
+  .hint{ font-size:12.5px; color:var(--ink-soft); margin-top:8px; }
+  .hint.warn{
+    display:flex; gap:8px; align-items:flex-start;
+    background:#FBF0DC; border:1px solid #E7CE9C;
+    color:#6b4f18;
+    padding:11px 14px;
+    border-radius:10px;
+    margin-top:14px;
+  }
+  .hint.error{ color:var(--rose-deep); }
+  .charcount{ font-size:12px; color:var(--ink-soft); text-align:right; margin-top:6px; }
+
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:560px){ .row2{grid-template-columns:1fr;} }
+
+  label.field-label{
+    display:block; font-size:12.5px; font-weight:600;
+    color:var(--sage-deep); margin-bottom:7px;
+    letter-spacing:0.01em;
+  }
+
+  /* chips (category) */
+  .chip-grid{ display:flex; flex-wrap:wrap; gap:10px; }
+  .chip{
+    display:flex; align-items:center; gap:8px;
+    padding:11px 16px;
+    border-radius:999px;
+    border:1.5px solid var(--paper-edge);
+    background:var(--paper-deep);
+    font-size:13.5px; font-weight:500;
+    cursor:pointer;
+    transition:all .18s ease;
+    user-select:none;
+  }
+  .chip:hover{ border-color:var(--sage); }
+  .chip.selected{
+    background:var(--sage); border-color:var(--sage); color:#fff;
+  }
+
+  /* toggle */
+  .toggle-row{ display:flex; align-items:center; gap:12px; margin:18px 0 4px; }
+  .switch{
+    width:42px; height:24px; border-radius:999px;
+    background:var(--paper-edge);
+    position:relative; cursor:pointer; flex:none;
+    transition:background .2s ease;
+  }
+  .switch.on{ background:var(--sage); }
+  .switch::after{
+    content:''; position:absolute; top:3px; left:3px;
+    width:18px; height:18px; border-radius:50%; background:#fff;
+    transition:left .2s ease;
+    box-shadow:0 1px 3px rgba(0,0,0,0.25);
+  }
+  .switch.on::after{ left:21px; }
+
+  /* style pills (message font) */
+  .style-pill-row{ display:flex; gap:10px; margin-bottom:18px; }
+  .style-pill{
+    flex:1; padding:12px; text-align:center;
+    border-radius:12px; border:1.5px solid var(--paper-edge);
+    background:var(--paper-deep); cursor:pointer; font-size:14px;
+    transition:all .18s ease;
+  }
+  .style-pill.selected{ border-color:var(--rose); background:#FCEFEF; color:var(--rose-deep); font-weight:600; }
+  .style-pill[data-style="serif"]{ font-family:'Fraunces',serif; }
+  .style-pill[data-style="script"]{ font-family:'Caveat',cursive; font-size:19px; }
+
+  /* upload */
+  .dropzone{
+    border:1.5px dashed var(--paper-edge);
+    border-radius:var(--radius-md);
+    padding:28px;
+    text-align:center;
+    background:var(--paper-deep);
+    cursor:pointer;
+    transition:border-color .2s ease, background .2s ease;
+  }
+  .dropzone:hover{ border-color:var(--sage); }
+  .dropzone svg{ width:30px;height:30px; color:var(--sage-deep); margin-bottom:10px;}
+  .dropzone p{ margin:0; font-size:13.5px; color:var(--ink-soft); }
+  .dropzone strong{ color:var(--ink); }
+  .thumbs{ display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+  .thumb{
+    width:64px; height:64px; border-radius:10px; overflow:hidden;
+    border:1.5px solid var(--paper-edge); position:relative;
+  }
+  .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .thumb button{
+    position:absolute; top:2px; right:2px;
+    width:18px; height:18px; border-radius:50%;
+    border:none; background:rgba(43,42,37,0.75); color:#fff;
+    font-size:11px; line-height:1; cursor:pointer;
+  }
+
+  /* emoji */
+  .emoji-grid{ display:flex; flex-wrap:wrap; gap:10px; }
+  .emoji-btn{
+    width:48px; height:48px; border-radius:12px;
+    border:1.5px solid var(--paper-edge); background:var(--paper-deep);
+    font-size:21px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:all .15s ease;
+  }
+  .emoji-btn.selected{ border-color:var(--gold); background:#FBF0DC; transform:translateY(-2px); }
+
+  /* music list */
+  .song-list{ display:flex; flex-direction:column; gap:10px; }
+  .song-item{
+    display:flex; align-items:center; gap:14px;
+    padding:12px 14px; border-radius:12px;
+    border:1.5px solid var(--paper-edge); background:var(--paper-deep);
+    cursor:pointer; transition:all .15s ease;
+  }
+  .song-item.selected{ border-color:var(--sage); background:#EEF1E7; }
+  .song-icon{
+    width:36px; height:36px; border-radius:8px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--sage); color:#fff; font-size:15px;
+  }
+  .song-meta{ display:flex; flex-direction:column; line-height:1.3; }
+  .song-title{ font-size:13.5px; font-weight:600; }
+  .song-sub{ font-size:11.5px; color:var(--ink-soft); }
+
+  /* nav buttons */
+  .nav-row{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top:34px; padding-top:22px; border-top:1px solid var(--paper-edge);
+  }
+  .btn{
+    font-family:'Inter',sans-serif; font-size:14.5px; font-weight:600;
+    padding:13px 26px; border-radius:12px; border:none; cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-ghost{
+    background:transparent; color:var(--ink-soft);
+    border:1.5px solid var(--paper-edge);
+  }
+  .btn-ghost:disabled{ opacity:0.4; cursor:not-allowed; }
+  .btn-primary{
+    background:linear-gradient(135deg, var(--sage), var(--sage-deep));
+    color:#fff;
+    box-shadow:0 10px 24px -10px rgba(78,92,65,0.55);
+  }
+  .btn-primary:hover{ box-shadow:0 14px 28px -10px rgba(78,92,65,0.65); }
+
+  .link-line{ margin-top:20px; font-size:13px; color:var(--ink-soft); display:flex; align-items:center; gap:8px;}
+  .link-line b{ color:var(--ink); font-weight:600; }
+  .link-line a{ color:var(--sage-deep); text-decoration:none; }
+
+  /* ---------- RIGHT: PREVIEW ---------- */
+  .preview-wrap{ position:sticky; top:28px; }
+  .preview-label{
+    display:flex; align-items:center; gap:8px;
+    font-size:13px; color:var(--ink-soft); margin-bottom:14px;
+  }
+  .preview-label b{ color:var(--ink); font-family:'Fraunces',serif; font-size:15px; font-weight:600;}
+
+  .stage{
+    background:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,0.05), transparent 40%),
+      linear-gradient(160deg, var(--plum), var(--plum-deep));
+    border-radius:26px;
+    padding:34px 22px 30px;
+    position:relative;
+    overflow:hidden;
+    min-height:560px;
+    box-shadow:var(--shadow-soft);
+  }
+  .petal{
+    position:absolute;
+    width:14px; height:18px;
+    background:var(--rose);
+    border-radius:60% 0 60% 0;
+    opacity:0.35;
+    animation:drift 9s ease-in-out infinite;
+  }
+  .petal:nth-child(1){ top:8%; left:12%; animation-delay:0s; transform:rotate(20deg);}
+  .petal:nth-child(2){ top:22%; right:10%; animation-delay:2s; transform:rotate(-30deg); background:var(--gold);}
+  .petal:nth-child(3){ bottom:14%; left:18%; animation-delay:4s; transform:rotate(60deg);}
+  @keyframes drift{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    50%{ transform:translateY(-14px) rotate(18deg); }
+  }
+
+  .tag-string{
+    width:1.5px; height:26px; background:rgba(255,255,255,0.35);
+    margin:0 auto;
+  }
+
+  .card{
+    background:var(--paper);
+    border-radius:16px;
+    padding:26px 22px 22px;
+    position:relative;
+    box-shadow:0 20px 45px -14px rgba(0,0,0,0.55);
+    margin-top:0;
+  }
+  .card::before{
+    content:'';
+    position:absolute; top:-9px; left:50%; transform:translateX(-50%);
+    width:16px; height:16px; border-radius:50%;
+    background:var(--plum-deep);
+    box-shadow:0 0 0 4px var(--paper);
+  }
+
+  .card-cat{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--rose-deep); margin-bottom:10px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .card-title{
+    font-family:'Fraunces',serif; font-weight:600; font-size:23px;
+    line-height:1.2; margin:0 0 4px; word-break:break-word;
+  }
+  .card-slug{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+    color:var(--ink-soft); margin-bottom:14px; word-break:break-all;
+  }
+  .card-photo{
+    width:100%; aspect-ratio:16/10; border-radius:10px; overflow:hidden;
+    background:var(--paper-deep); margin-bottom:14px;
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--paper-edge);
+  }
+  .card-photo img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .card-photo .empty-ph{ color:#b8b09a; font-size:12px; text-align:center; padding:8px;}
+
+  .card-msg{
+    font-size:14.5px; line-height:1.65; color:var(--ink);
+    white-space:pre-wrap; word-break:break-word;
+    min-height:44px;
+    margin-bottom:14px;
+  }
+  .card-msg.style-script{ font-family:'Caveat',cursive; font-size:21px; line-height:1.4; }
+  .card-msg.style-serif{ font-family:'Fraunces',serif; font-style:italic; }
+
+  .card-date{
+    font-size:12px; color:var(--sage-deep); font-weight:600; margin-bottom:14px;
+    display:flex; align-items:center; gap:6px;
+  }
+
+  .card-from{
+    font-size:12.5px; color:var(--ink-soft); border-top:1px dashed var(--paper-edge);
+    padding-top:12px; margin-top:2px;
+  }
+  .card-from b{ color:var(--ink); }
+
+  .card-emojis{ position:absolute; top:14px; right:14px; font-size:17px; display:flex; gap:2px; }
+
+  .player{
+    margin-top:16px; background:var(--plum); border-radius:12px; padding:12px 14px;
+    display:flex; align-items:center; gap:12px;
+  }
+  .player-play{
+    width:32px; height:32px; border-radius:50%; background:var(--sage);
+    display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px;
+    flex:none; cursor:pointer;
+  }
+  .player-meta{ flex:1; min-width:0; }
+  .player-title{ color:#fff; font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .player-sub{ color:rgba(255,255,255,0.55); font-size:10.5px; }
+  .eq{ display:flex; align-items:flex-end; gap:2px; height:14px; flex:none; }
+  .eq span{ width:3px; background:var(--gold); border-radius:2px; animation:eq 0.9s ease-in-out infinite; }
+  .eq span:nth-child(1){ height:6px; animation-delay:0s; }
+  .eq span:nth-child(2){ height:12px; animation-delay:0.15s; }
+  .eq span:nth-child(3){ height:8px; animation-delay:0.3s; }
+  @keyframes eq{ 0%,100%{ transform:scaleY(0.4);} 50%{ transform:scaleY(1);} }
+  .eq.paused span{ animation-play-state:paused; transform:scaleY(0.4); }
+
+  .stage-url{
+    text-align:center; margin-top:18px; font-family:'IBM Plex Mono',monospace;
+    font-size:11px; color:rgba(255,255,255,0.5); word-break:break-all;
+  }
+</style>
+</head>
+<body>
+
+  <div class="brand">
+    <svg viewBox="0 0 40 40" fill="none">
+      <circle cx="20" cy="20" r="19" stroke="#6E7F5C" stroke-width="1.4"/>
+      <path d="M20 11c2 3 2 6 0 9c-2-3-2-6 0-9Z" fill="#C97B84"/>
+      <path d="M20 20c-3 2-6 2-9 0c3-2 6-2 9 0Z" fill="#B08947"/>
+      <path d="M20 20c3 2 6 2 9 0c-3-2-6-2-9 0Z" fill="#6E7F5C"/>
+      <path d="M20 20c-2 3-2 6 0 9c2-3 2-6 0-9Z" fill="#A85763"/>
+    </svg>
+    <div class="brand-text">
+      <span class="eyebrow">Floricultura Alameda</span>
+      <span class="name">Cartão com Flores</span>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- ================= WIZARD ================= -->
+    <div class="wizard">
+      <svg class="sprig" id="sprig" viewBox="0 0 150 150" fill="none">
+        <path d="M140 8C120 30 100 55 90 90" stroke="#6E7F5C" stroke-width="2" stroke-linecap="round"/>
+        <g id="sprig-leaves"></g>
+      </svg>
+
+      <div class="tracker" id="tracker"></div>
+
+      <div id="step-content"></div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" id="btnPrev">Anterior</button>
+        <button class="btn btn-primary" id="btnNext">Próximo</button>
+      </div>
+
+      <div class="link-line">
+        <span>Veja como ficará 👇</span>
+        <a href="#preview"><b id="urlPreviewInline">floriculturaalameda.com.br/cartao/...</b></a>
+      </div>
+    </div>
+
+    <!-- ================= PREVIEW ================= -->
+    <div class="preview-wrap" id="preview">
+      <div class="preview-label"><b>Pré-visualização</b> · atualiza em tempo real</div>
+      <div class="stage">
+        <div class="petal"></div>
+        <div class="petal"></div>
+        <div class="petal"></div>
+        <div class="tag-string"></div>
+
+        <div class="card">
+          <div class="card-emojis" id="pvEmojis"></div>
+          <div class="card-cat" id="pvCat">Sem categoria</div>
+          <div class="card-title" id="pvTitle">Título do seu cartão</div>
+          <div class="card-slug" id="pvSlug">/cartao/...</div>
+
+          <div class="card-photo" id="pvPhoto"><span class="empty-ph">Suas fotos aparecem aqui</span></div>
+
+          <div class="card-date" id="pvDate" style="display:none;"></div>
+
+          <div class="card-msg" id="pvMsg">Sua mensagem vai aparecer aqui conforme você escreve…</div>
+
+          <div class="card-from" id="pvFrom">Com carinho, <b>Seu nome</b></div>
+
+          <div class="player" id="pvPlayer" style="display:none;">
+            <div class="player-play" id="pvPlayBtn">▶</div>
+            <div class="player-meta">
+              <div class="player-title" id="pvSongTitle">—</div>
+              <div class="player-sub" id="pvSongSub">—</div>
+            </div>
+            <div class="eq paused" id="pvEq"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+
+        <div class="stage-url" id="pvFullUrl">floriculturaalameda.com.br/cartao/seu-link-aqui</div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+(function(){
+
+  const state = {
+    slug: '',
+    title: '',
+    senderName: '',
+    senderContact: '',
+    category: '',
+    hasDate: false,
+    eventDate: '',
+    message: '',
+    msgStyle: 'sans',
+    photos: [],
+    emojis: [],
+    song: null
+  };
+
+  const CATEGORIES = [
+    { id:'aniversario', label:'Aniversário', icon:'🎂' },
+    { id:'amor', label:'Amor', icon:'🌹' },
+    { id:'agradecimento', label:'Agradecimento', icon:'🌼' },
+    { id:'condolencias', label:'Condolências', icon:'🕊️' },
+    { id:'so-porque-sim', label:'Só porque sim', icon:'🌷' },
+    { id:'boas-vindas', label:'Boas-vindas / Novo lar', icon:'🌿' },
+  ];
+
+  const EMOJIS = ['🌸','🌹','🌻','🌷','🌺','💐','🍃','✨','💛','🤍'];
+
+  const SONGS = [
+    { id:'s1', title:'Manhã de Jardim', sub:'instrumental · piano suave' },
+    { id:'s2', title:'Bossa das Flores', sub:'violão · bossa nova' },
+    { id:'s3', title:'Luz da Tarde', sub:'acústico · voz e violão' },
+    { id:'s4', title:'Sem música', sub:'o cartão fica só com a mensagem' },
+  ];
+
+  const STEPS = [
+    { key:'slug', label:'Nome da Página' },
+    { key:'title', label:'Título do Cartão' },
+    { key:'contact', label:'De quem é' },
+    { key:'category', label:'Categoria' },
+    { key:'date', label:'Data Especial' },
+    { key:'message', label:'Mensagem' },
+    { key:'photos', label:'Fotos' },
+    { key:'emoji', label:'Selo / Emoji' },
+    { key:'song', label:'Música' },
+  ];
+
+  let current = 0;
+
+  const el = (tag, cls, html) => {
+    const e = document.createElement(tag);
+    if(cls) e.className = cls;
+    if(html !== undefined) e.innerHTML = html;
+    return e;
+  };
+
+  const slugify = (str) => str
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-zA-Z0-9\s-]/g,'')
+    .trim();
+
+  /* ---------------- TRACKER ---------------- */
+  function renderTracker(){
+    const t = document.getElementById('tracker');
+    t.innerHTML = '';
+    STEPS.forEach((s, i) => {
+      const node = el('div','step-node');
+      if(i < current) node.classList.add('done');
+      if(i === current) node.classList.add('active');
+      node.innerHTML = `<div class="dot"><span>${i+1}</span></div><div class="step-label">${s.label}</div>`;
+      node.style.cursor = i <= current ? 'pointer' : 'default';
+      node.addEventListener('click', () => { if(i <= current){ current = i; render(); }});
+      t.appendChild(node);
+    });
+  }
+
+  /* ---------------- SPRIG (progress signature) ---------------- */
+  const leafPaths = [
+    "M140 8c-8 4-15 9-19 16c8-2 15-1 19 3c1-8 1-14 0-19Z",
+    "M118 34c-9 1-17 4-23 10c8 0 15 2 19 7c3-6 4-12 4-17Z",
+    "M100 55c-9-1-18 0-25 5c7 2 13 6 16 11c4-5 7-10 9-16Z",
+    "M87 76c-9-3-18-3-26 0c6 4 11 9 13 14c5-4 9-9 13-14Z",
+    "M90 90c-8-4-17-6-25-4c5 5 9 11 10 16c6-3 11-7 15-12Z",
+    "M96 100c-6-6-14-9-22-9c3 6 5 12 5 18c6-2 12-5 17-9Z",
+    "M105 108c-5-7-12-11-20-12c2 6 3 13 1 18c7-1 14-3 19-6Z",
+    "M112 118c-3-8-9-13-16-15c0 6 0 13-3 18c7 0 14-1 19-3Z",
+    "M118 128c-1-8-6-14-12-18c-1 7-3 13-7 18c6 1 13 1 19 0Z",
+  ];
+  function renderSprig(){
+    const g = document.getElementById('sprig-leaves');
+    g.innerHTML = '';
+    leafPaths.forEach((d, i) => {
+      const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d', d);
+      const done = i <= current;
+      p.setAttribute('fill', i % 3 === 0 ? '#C97B84' : (i % 3 === 1 ? '#6E7F5C' : '#B08947'));
+      p.style.opacity = done ? '1' : '0';
+      p.style.transform = done ? 'scale(1)' : 'scale(0.4)';
+      p.style.transformOrigin = 'center';
+      g.appendChild(p);
+    });
+  }
+
+  /* ---------------- STEP RENDERERS ---------------- */
+  function wrap(eyebrow, title, desc, bodyHtml){
+    return `
+      <div class="step-eyebrow">${eyebrow}</div>
+      <h2 class="step-title">${title}</h2>
+      <p class="step-desc">${desc}</p>
+      ${bodyHtml}
+    `;
+  }
+
+  function renderStepContent(){
+    const c = document.getElementById('step-content');
+    let html = '';
+
+    if(current === 0){
+      html = wrap('Passo 1 de 9','Nome da Página',
+        'Escolha o endereço único do seu cartão — é o que vai aparecer no link enviado.',
+        `
+        <div class="field">
+          <input type="text" id="inpSlug" placeholder="Ex: joana-e-marcos ou obrigado-mae" value="${state.slug}">
+        </div>
+        <div class="hint" id="slugCount">0/60 caracteres</div>
+        <div class="hint warn">⚠️ Este campo é o identificador do link — evite espaços duplos e caracteres especiais.</div>
+        `);
+    }
+
+    if(current === 1){
+      html = wrap('Passo 2 de 9','Título do Cartão',
+        'O título que vai aparecer em destaque, logo no topo do cartão.',
+        `
+        <div class="field">
+          <input type="text" id="inpTitle" placeholder="Ex: Feliz Aniversário, Ana!" value="${state.title}">
+        </div>
+        <div class="hint" id="titleCount">0/80 caracteres</div>
+        `);
+    }
+
+    if(current === 2){
+      html = wrap('Passo 3 de 9','De quem é este cartão',
+        'Assim quem recebe sabe quem enviou o carinho.',
+        `
+        <div class="row2">
+          <div class="field">
+            <label class="field-label">Seu nome</label>
+            <input type="text" id="inpSenderName" placeholder="Ex: Marcos" value="${state.senderName}">
+          </div>
+          <div class="field">
+            <label class="field-label">Contato (opcional)</label>
+            <input type="tel" id="inpSenderContact" placeholder="WhatsApp ou e-mail" value="${state.senderContact}">
+          </div>
+        </div>
+        <div class="hint">Usamos isso só para assinar o cartão — não aparece publicamente sem sua autorização.</div>
+        `);
+    }
+
+    if(current === 3){
+      html = wrap('Passo 4 de 9','Categoria',
+        'Isso ajusta o tom do cartão e sugere flores combinando com a ocasião.',
+        `<div class="chip-grid" id="catGrid"></div>`);
+    }
+
+    if(current === 4){
+      html = wrap('Passo 5 de 9','Data Especial',
+        'Quer mostrar uma contagem de dias no cartão? (ex: "há 3 anos juntos")',
+        `
+        <div class="toggle-row">
+          <div class="switch ${state.hasDate ? 'on':''}" id="dateSwitch"></div>
+          <span style="font-size:14px;">Mostrar contador de data no cartão</span>
+        </div>
+        <div class="field" id="dateField" style="display:${state.hasDate ? 'block':'none'}; margin-top:14px;">
+          <label class="field-label">Data de referência</label>
+          <input type="date" id="inpDate" value="${state.eventDate}">
+          <div class="hint">O cartão vai calcular automaticamente há quanto tempo é a data.</div>
+        </div>
+        `);
+    }
+
+    if(current === 5){
+      html = wrap('Passo 6 de 9','Mensagem',
+        'Escreva o recado com carinho. Você também escolhe o estilo da letra.',
+        `
+        <div class="style-pill-row">
+          <div class="style-pill" data-style="sans">Padrão</div>
+          <div class="style-pill" data-style="serif">Elegante</div>
+          <div class="style-pill" data-style="script">Manuscrita</div>
+        </div>
+        <div class="field">
+          <textarea id="inpMessage" maxlength="400" placeholder="Escreva sua mensagem...">${state.message}</textarea>
+        </div>
+        <div class="charcount" id="msgCount">0/400 caracteres</div>
+        `);
+    }
+
+    if(current === 6){
+      html = wrap('Passo 7 de 9','Fotos',
+        'Adicione até 4 fotos para acompanhar o cartão. A primeira aparece em destaque.',
+        `
+        <div class="dropzone" id="dropzone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
+          <p><strong>Clique para enviar</strong> ou arraste as fotos aqui</p>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+        <div class="thumbs" id="thumbs"></div>
+        `);
+    }
+
+    if(current === 7){
+      html = wrap('Passo 8 de 9','Selo / Emoji',
+        'Escolha até 3 emojis para decorar o canto do cartão, como um selo.',
+        `<div class="emoji-grid" id="emojiGrid"></div>`);
+    }
+
+    if(current === 8){
+      html = wrap('Passo 9 de 9','Escolha uma música',
+        'A música toca junto quando abrirem o cartão.',
+        `<div class="song-list" id="songList"></div>`);
+    }
+
+    c.innerHTML = html;
+    bindStepEvents();
+  }
+
+  /* ---------------- BIND EVENTS PER STEP ---------------- */
+  function bindStepEvents(){
+
+    if(current === 0){
+      const inp = document.getElementById('inpSlug');
+      const count = document.getElementById('slugCount');
+      const update = () => {
+        state.slug = slugify(inp.value).slice(0,60);
+        count.textContent = `${state.slug.length}/60 caracteres`;
+        renderPreview();
+      };
+      inp.addEventListener('input', update);
+      update();
+    }
+
+    if(current === 1){
+      const inp = document.getElementById('inpTitle');
+      const count = document.getElementById('titleCount');
+      const update = () => {
+        state.title = inp.value.slice(0,80);
+        count.textContent = `${state.title.length}/80 caracteres`;
+        renderPreview();
+      };
+      inp.addEventListener('input', update);
+      update();
+    }
+
+    if(current === 2){
+      const n = document.getElementById('inpSenderName');
+      const c = document.getElementById('inpSenderContact');
+      n.addEventListener('input', () => { state.senderName = n.value; renderPreview(); });
+      c.addEventListener('input', () => { state.senderContact = c.value; renderPreview(); });
+    }
+
+    if(current === 3){
+      const grid = document.getElementById('catGrid');
+      grid.innerHTML = '';
+      CATEGORIES.forEach(cat => {
+        const chip = el('div', 'chip' + (state.category === cat.id ? ' selected':''), `<span>${cat.icon}</span><span>${cat.label}</span>`);
+        chip.addEventListener('click', () => {
+          state.category = state.category === cat.id ? '' : cat.id;
+          bindStepEvents();
+          renderPreview();
+        });
+        grid.appendChild(chip);
+      });
+    }
+
+    if(current === 4){
+      const sw = document.getElementById('dateSwitch');
+      const field = document.getElementById('dateField');
+      sw.addEventListener('click', () => {
+        state.hasDate = !state.hasDate;
+        sw.classList.toggle('on', state.hasDate);
+        field.style.display = state.hasDate ? 'block' : 'none';
+        renderPreview();
+      });
+      const inpDate = document.getElementById('inpDate');
+      if(inpDate){
+        inpDate.addEventListener('input', () => { state.eventDate = inpDate.value; renderPreview(); });
+      }
+    }
+
+    if(current === 5){
+      const pills = document.querySelectorAll('.style-pill');
+      pills.forEach(p => {
+        p.classList.toggle('selected', p.dataset.style === state.msgStyle);
+        p.addEventListener('click', () => {
+          state.msgStyle = p.dataset.style;
+          bindStepEvents();
+          renderPreview();
+        });
+      });
+      const ta = document.getElementById('inpMessage');
+      const count = document.getElementById('msgCount');
+      const update = () => {
+        state.message = ta.value.slice(0,400);
+        count.textContent = `${state.message.length}/400 caracteres`;
+        renderPreview();
+      };
+      ta.addEventListener('input', update);
+      update();
+    }
+
+    if(current === 6){
+      const dz = document.getElementById('dropzone');
+      const input = document.getElementById('fileInput');
+      dz.addEventListener('click', () => input.click());
+      input.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files).slice(0, 4 - state.photos.length);
+        files.forEach(f => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            if(state.photos.length < 4){
+              state.photos.push(ev.target.result);
+              renderThumbs();
+              renderPreview();
+            }
+          };
+          reader.readAsDataURL(f);
+        });
+      });
+      renderThumbs();
+    }
+
+    if(current === 7){
+      const grid = document.getElementById('emojiGrid');
+      grid.innerHTML = '';
+      EMOJIS.forEach(em => {
+        const btn = el('div','emoji-btn' + (state.emojis.includes(em) ? ' selected':''), em);
+        btn.addEventListener('click', () => {
+          if(state.emojis.includes(em)){
+            state.emojis = state.emojis.filter(x => x !== em);
+          } else if(state.emojis.length < 3){
+            state.emojis.push(em);
+          }
+          bindStepEvents();
+          renderPreview();
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    if(current === 8){
+      const list = document.getElementById('songList');
+      list.innerHTML = '';
+      SONGS.forEach(song => {
+        const item = el('div','song-item' + (state.song && state.song.id === song.id ? ' selected':''));
+        item.innerHTML = `
+          <div class="song-icon">${song.id === 's4' ? '✕' : '♪'}</div>
+          <div class="song-meta">
+            <div class="song-title">${song.title}</div>
+            <div class="song-sub">${song.sub}</div>
+          </div>
+        `;
+        item.addEventListener('click', () => {
+          state.song = song.id === 's4' ? null : song;
+          bindStepEvents();
+          renderPreview();
+        });
+        list.appendChild(item);
+      });
+    }
+  }
+
+  function renderThumbs(){
+    const t = document.getElementById('thumbs');
+    if(!t) return;
+    t.innerHTML = '';
+    state.photos.forEach((src, i) => {
+      const th = el('div','thumb');
+      th.innerHTML = `<img src="${src}"><button data-i="${i}">✕</button>`;
+      th.querySelector('button').addEventListener('click', () => {
+        state.photos.splice(i,1);
+        renderThumbs();
+        renderPreview();
+      });
+      t.appendChild(th);
+    });
+  }
+
+  /* ---------------- PREVIEW ---------------- */
+  let playing = false;
+
+  function renderPreview(){
+    const catObj = CATEGORIES.find(c => c.id === state.category);
+    document.getElementById('pvCat').innerHTML = catObj ? `<span>${catObj.icon}</span> ${catObj.label}` : 'Sem categoria';
+    document.getElementById('pvTitle').textContent = state.title || 'Título do seu cartão';
+    document.getElementById('pvSlug').textContent = '/cartao/' + (state.slug || '...');
+    document.getElementById('urlPreviewInline').textContent = 'floriculturaalameda.com.br/cartao/' + (state.slug || '...');
+    document.getElementById('pvFullUrl').textContent = 'floriculturaalameda.com.br/cartao/' + (state.slug || 'seu-link-aqui');
+
+    const photoBox = document.getElementById('pvPhoto');
+    if(state.photos.length){
+      photoBox.innerHTML = `<img src="${state.photos[0]}">`;
+    } else {
+      photoBox.innerHTML = `<span class="empty-ph">Suas fotos aparecem aqui</span>`;
+    }
+
+    const dateBox = document.getElementById('pvDate');
+    if(state.hasDate && state.eventDate){
+      const d = new Date(state.eventDate + 'T00:00:00');
+      const now = new Date();
+      const diffDays = Math.max(0, Math.round((now - d) / 86400000));
+      dateBox.style.display = 'flex';
+      dateBox.innerHTML = `🗓️ ${diffDays} dia${diffDays === 1 ? '' : 's'} desde ${d.toLocaleDateString('pt-BR')}`;
+    } else {
+      dateBox.style.display = 'none';
+    }
+
+    const msg = document.getElementById('pvMsg');
+    msg.textContent = state.message || 'Sua mensagem vai aparecer aqui conforme você escreve…';
+    msg.className = 'card-msg' + (state.msgStyle === 'serif' ? ' style-serif' : state.msgStyle === 'script' ? ' style-script' : '');
+
+    document.getElementById('pvFrom').innerHTML = state.senderName
+      ? `Com carinho, <b>${state.senderName}</b>`
+      : `Com carinho, <b>seu nome</b>`;
+
+    document.getElementById('pvEmojis').textContent = state.emojis.join(' ');
+
+    const player = document.getElementById('pvPlayer');
+    if(state.song){
+      player.style.display = 'flex';
+      document.getElementById('pvSongTitle').textContent = state.song.title;
+      document.getElementById('pvSongSub').textContent = state.song.sub;
+    } else {
+      player.style.display = 'none';
+    }
+
+    renderSprig();
+  }
+
+  document.getElementById('pvPlayBtn').addEventListener('click', () => {
+    playing = !playing;
+    document.getElementById('pvPlayBtn').textContent = playing ? '❚❚' : '▶';
+    document.getElementById('pvEq').classList.toggle('paused', !playing);
+  });
+
+  /* ---------------- NAV ---------------- */
+  function render(){
+    renderTracker();
+    renderStepContent();
+    renderSprig();
+    document.getElementById('btnPrev').disabled = current === 0;
+    document.getElementById('btnNext').textContent = current === STEPS.length - 1 ? 'Finalizar' : 'Próximo';
+  }
+
+  document.getElementById('btnPrev').addEventListener('click', () => {
+    if(current > 0){ current--; render(); }
+  });
+
+  document.getElementById('btnNext').addEventListener('click', () => {
+    if(current === 0 && !state.slug){
+      alert('Escolha um nome para a página antes de continuar.');
+      return;
+    }
+    if(current === 1 && !state.title){
+      alert('Dê um título ao seu cartão antes de continuar.');
+      return;
+    }
+    if(current < STEPS.length - 1){
+      current++;
+      render();
+    } else {
+      alert('Cartão pronto! Link: floriculturaalameda.com.br/cartao/' + (state.slug || 'seu-link'));
+    }
+  });
+
+  render();
+  renderPreview();
+
+})();
+</script>
+</body>
+</html>
