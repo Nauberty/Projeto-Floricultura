@@ -28,6 +28,7 @@
     --plum-deep:#251722;
   }
   *{ box-sizing:border-box; }
+  [hidden]{ display:none !important; } /* vale mesmo para elementos com display definido no CSS */
   html,body{ margin:0; }
   body{
     min-height:100vh;
@@ -154,16 +155,42 @@
   }
   .card-from b{ color:var(--ink); font-family:'Fraunces',serif; font-size:17px; font-weight:600; }
 
-  .music{ margin-top:20px; }
-  .music-label{
-    display:flex; align-items:center; gap:8px;
-    font-size:12.5px; color:var(--ink-soft); margin-bottom:8px;
+  /* música: capa desfocada + progresso do trecho (o vídeo não aparece) */
+  .music{
+    position:relative; overflow:hidden; isolation:isolate;
+    margin-top:20px; border-radius:16px; padding:14px 14px 12px; color:#fff;
+    background:var(--plum-deep);
   }
-  .music-label b{ color:var(--ink); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .music-frame{
-    position:relative; width:100%; aspect-ratio:16/9; border-radius:12px; overflow:hidden; background:#111;
+  .music-bg{
+    position:absolute; inset:-30px; z-index:-1;
+    background-size:cover; background-position:center;
+    filter:blur(24px) saturate(1.3) brightness(0.55); transform:scale(1.1);
   }
-  .music-frame iframe, .music-frame > div{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .music::after{
+    content:''; position:absolute; inset:0; z-index:-1;
+    background:linear-gradient(160deg, rgba(54,35,49,0.5), rgba(37,23,34,0.8));
+  }
+  .music-row{ display:flex; align-items:center; gap:12px; }
+  .music-thumb{ width:52px; height:52px; flex:none; border-radius:10px; object-fit:cover; box-shadow:0 6px 16px rgba(0,0,0,0.4); }
+  .music-meta{ flex:1; min-width:0; line-height:1.3; }
+  .music-title{ font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .music-sub{ font-size:12px; color:rgba(255,255,255,0.65); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .music-play{
+    width:46px; height:46px; flex:none; border-radius:50%; border:none; cursor:pointer;
+    background:#fff; color:var(--plum); font-size:15px; box-shadow:0 8px 20px -6px rgba(0,0,0,0.5);
+  }
+  .music-play:focus-visible{ outline:2px solid var(--gold); outline-offset:3px; }
+  .music-progress{ height:5px; border-radius:999px; background:rgba(255,255,255,0.2); margin-top:14px; overflow:hidden; }
+  .music-progress-fill{
+    height:100%; width:100%; border-radius:999px; transform-origin:left; transform:scaleX(0);
+    background:linear-gradient(90deg, var(--rose), var(--gold)); will-change:transform;
+  }
+  .music-times{
+    display:flex; justify-content:space-between; margin-top:6px;
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:rgba(255,255,255,0.6);
+  }
+  /* o YouTube exige um player de verdade; ele fica invisível */
+  #ytPlayer{ position:fixed; right:0; bottom:0; width:200px; height:200px; opacity:0; pointer-events:none; z-index:-1; border:0; }
 
   .card-footer{ text-align:center; margin-top:22px; color:rgba(255,255,255,0.55); font-size:12.5px; line-height:1.8; }
   .card-footer a{ color:#fff; font-weight:600; text-decoration:none; border-bottom:1px solid rgba(255,255,255,0.35); }
@@ -214,8 +241,17 @@
         <div class="card-from" id="cFrom" hidden></div>
 
         <div class="music" id="cMusic" hidden>
-          <div class="music-label">🎵 <b id="cSong">Música do cartão</b></div>
-          <div class="music-frame"><div id="ytPlayer"></div></div>
+          <div class="music-bg" id="cMusicBg"></div>
+          <div class="music-row">
+            <img class="music-thumb" id="cMusicThumb" alt="">
+            <div class="music-meta">
+              <div class="music-title" id="cSong">Música do cartão</div>
+              <div class="music-sub" id="cSongSub"></div>
+            </div>
+            <button class="music-play" id="cPlay" type="button" aria-label="Tocar música">▶</button>
+          </div>
+          <div class="music-progress" aria-hidden="true"><div class="music-progress-fill" id="cProgress"></div></div>
+          <div class="music-times"><span id="cElapsed">00:00</span><span id="cTotal">00:00</span></div>
         </div>
       </article>
 
@@ -234,10 +270,12 @@
 
   </main>
 
+  <div id="ytPlayer" aria-hidden="true"></div>
+
 <script src="js/cartao-shared.js"></script>
 <script>
 (function(){
-  const { escapeHtml, findCategory, formatDateCounter, decodeCard, CardStore } = window.Cartao;
+  const { escapeHtml, findCategory, formatDateCounter, decodeCard, CardStore, secToMMSS } = window.Cartao;
   const $ = (id) => document.getElementById(id);
 
   let card = null;
@@ -304,7 +342,11 @@
 
     if(card.music && /^[\w-]{11}$/.test(card.music.id)){
       $('cMusic').hidden = false;
+      const thumb = `https://i.ytimg.com/vi/${card.music.id}/hqdefault.jpg`;
+      $('cMusicThumb').src = thumb;
+      $('cMusicBg').style.backgroundImage = `url("${thumb}")`;
       $('cSong').textContent = card.music.title || 'Música do cartão';
+      $('cSongSub').textContent = card.music.channel || '';
       $('soundHint').hidden = false;
       loadYouTube();
     }
@@ -335,26 +377,71 @@
     });
   }
 
-  /* ---------------- música (YouTube IFrame API) ---------------- */
+  /* ---------------- música (YouTube IFrame API, player invisível) ---------------- */
+  let snipStart = 0, snipEnd = 0, snipDur = 0;
+  let isPlaying = false;
+  let loopTimer = null, raf = null;
+
+  function setPlayUI(on){
+    isPlaying = on;
+    $('cPlay').textContent = on ? '❚❚' : '▶';
+    $('cPlay').setAttribute('aria-label', on ? 'Pausar música' : 'Tocar música');
+  }
+
+  // Progresso visual acompanhando a tela; volta ao início do trecho ao chegar no fim (timer, funciona em 2º plano)
+  function drawProgress(){
+    if(!player || !player.getCurrentTime) return;
+    const t = Math.min(Math.max(player.getCurrentTime() - snipStart, 0), snipDur);
+    $('cProgress').style.transform = `scaleX(${snipDur ? t / snipDur : 0})`;
+    $('cElapsed').textContent = secToMMSS(t);
+  }
+  function animate(){
+    drawProgress();
+    if(isPlaying) raf = requestAnimationFrame(animate);
+  }
+  function checkLoop(){
+    drawProgress(); // garante o progresso mesmo se a animação estiver pausada pelo navegador
+    if(player && player.getCurrentTime && player.getCurrentTime() >= snipEnd - 0.1){
+      player.seekTo(snipStart, true);
+    }
+  }
+
   function loadYouTube(){
+    const m = card.music;
+    snipStart = Math.max(0, m.start | 0);
+    snipDur = Math.max(5, Math.min(120, (m.dur | 0) || 30));
+    snipEnd = snipStart + snipDur;
+    $('cTotal').textContent = secToMMSS(snipDur);
+
     window.onYouTubeIframeAPIReady = () => {
-      const m = card.music;
-      const start = Math.max(0, m.start | 0);
-      const end = start + Math.max(5, Math.min(120, m.dur | 0 || 30));
       player = new YT.Player('ytPlayer', {
-        videoId: m.id,
-        playerVars: { start, end, rel: 0, playsinline: 1, modestbranding: 1 },
+        width: 200, height: 200, videoId: m.id,
+        playerVars: { start: snipStart, rel: 0, playsinline: 1, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3 },
         events: {
           onReady: () => {
             playerReady = true;
             if(wantsPlay) player.playVideo();
           },
-          // Repete o trecho escolhido enquanto o cartão estiver aberto
           onStateChange: (e) => {
-            if(e.data === YT.PlayerState.ENDED){
-              player.seekTo(start, true);
+            if(e.data === YT.PlayerState.PLAYING){
+              setPlayUI(true);
+              clearInterval(loopTimer);
+              loopTimer = setInterval(checkLoop, 100);
+              cancelAnimationFrame(raf);
+              raf = requestAnimationFrame(animate);
+            } else if(e.data === YT.PlayerState.PAUSED){
+              setPlayUI(false);
+              clearInterval(loopTimer);
+              drawProgress();
+            } else if(e.data === YT.PlayerState.ENDED){
+              // Vídeo acabou antes do fim do trecho: recomeça o trecho
+              player.seekTo(snipStart, true);
               player.playVideo();
             }
+          },
+          onError: () => {
+            $('cSongSub').textContent = 'Não foi possível tocar esta música';
+            $('cPlay').disabled = true;
           },
         },
       });
@@ -362,6 +449,12 @@
     const s = document.createElement('script');
     s.src = 'https://www.youtube.com/iframe_api';
     document.head.appendChild(s);
+
+    $('cPlay').addEventListener('click', () => {
+      if(!playerReady){ wantsPlay = !wantsPlay; setPlayUI(wantsPlay); return; }
+      if(isPlaying) player.pauseVideo();
+      else player.playVideo();
+    });
   }
 
   function openCard(){
