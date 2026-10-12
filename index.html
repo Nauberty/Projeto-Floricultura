@@ -343,6 +343,61 @@
   }
   .yt-embed-wrap iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
 
+  /* barra de trecho com dois cursores */
+  .trim{ margin-top:18px; }
+  .trim-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .trim-badge{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500;
+    background:var(--sage); color:#fff; border-radius:999px; padding:3px 10px;
+  }
+  .trim-slider{ --thumb:24px; position:relative; height:40px; touch-action:none; }
+  .trim-rail{ position:absolute; left:calc(var(--thumb) / 2); right:calc(var(--thumb) / 2); top:50%; height:8px; transform:translateY(-50%); }
+  .trim-track{ position:absolute; inset:0; border-radius:999px; background:var(--paper-edge); }
+  .trim-range{
+    position:absolute; top:0; bottom:0; left:0; width:0; border-radius:999px;
+    background:linear-gradient(90deg, var(--sage), var(--sage-deep));
+  }
+  .trim-playhead{
+    position:absolute; top:-7px; bottom:-7px; width:3px; margin-left:-1.5px;
+    background:var(--gold); border-radius:2px; box-shadow:0 0 0 2px rgba(176,137,71,0.25);
+    pointer-events:none; transition:left .1s linear;
+  }
+  .trim-input{
+    position:absolute; inset:0; width:100%; height:100%; margin:0;
+    -webkit-appearance:none; appearance:none; background:transparent;
+    pointer-events:none; z-index:3; outline:none;
+  }
+  .trim-input::-webkit-slider-runnable-track{ background:transparent; border:none; height:100%; }
+  .trim-input::-moz-range-track{ background:transparent; border:none; }
+  .trim-input::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; pointer-events:auto; cursor:grab;
+    width:var(--thumb); height:var(--thumb); border-radius:50%; margin-top:calc((40px - var(--thumb)) / 2);
+    background:#fff; border:3px solid var(--sage-deep);
+    box-shadow:0 3px 8px rgba(43,42,37,0.3); transition:transform .12s ease;
+  }
+  .trim-input::-moz-range-thumb{
+    pointer-events:auto; cursor:grab;
+    width:var(--thumb); height:var(--thumb); border-radius:50%; box-sizing:border-box;
+    background:#fff; border:3px solid var(--sage-deep); box-shadow:0 3px 8px rgba(43,42,37,0.3);
+  }
+  .trim-input:active::-webkit-slider-thumb{ cursor:grabbing; transform:scale(1.15); }
+  .trim-input:focus-visible::-webkit-slider-thumb{ box-shadow:0 0 0 4px rgba(168,87,99,0.35); }
+  .trim-input:focus-visible::-moz-range-thumb{ box-shadow:0 0 0 4px rgba(168,87,99,0.35); }
+  .trim-slider.is-loading{ opacity:0.45; }
+  .trim-slider.is-loading .trim-input::-webkit-slider-thumb{ cursor:default; }
+  .trim-scale{
+    display:flex; justify-content:space-between; padding:0 2px;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft);
+  }
+  .trim-times{ display:flex; gap:10px; margin-top:12px; }
+  .trim-times > div{
+    flex:1; display:flex; justify-content:space-between; align-items:center;
+    background:var(--paper-deep); border:1.5px solid var(--paper-edge); border-radius:12px; padding:10px 14px;
+  }
+  .trim-times span{ font-size:12.5px; color:var(--ink-soft); }
+  .trim-times b{ font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:500; }
+  @media (max-width:600px){ .trim-slider{ --thumb:28px; } }
+
   .yt-actions{ display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap; }
 
   .no-music-row{
@@ -733,12 +788,6 @@
     return e;
   };
 
-  const mmssToSec = (str) => {
-    const m = String(str).trim().match(/^(\d{1,3}):([0-5]?\d)$/);
-    if(!m) return null;
-    return (parseInt(m[1],10) * 60) + parseInt(m[2],10);
-  };
-
   function extractYouTubeId(url){
     if(!url) return null;
     const re = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
@@ -800,6 +849,7 @@
   }
 
   function renderStepContent(){
+    if(musicUI){ musicUI.destroy(); musicUI = null; }
     const c = document.getElementById('step-content');
     let html = '';
 
@@ -916,22 +966,34 @@
         <div class="hint" id="ytHint">${m ? '' : 'Cole um link do YouTube para continuar.'}</div>
 
         <div id="ytPreviewBox" style="display:${m ? 'block':'none'};">
-          <div class="yt-embed-wrap">
-            <iframe id="ytFrame" src="" title="Prévia da música" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-          </div>
-          <div class="row2" style="margin-top:16px;">
-            <div class="field">
-              <label class="field-label">Início do trecho (mm:ss)</label>
-              <input type="text" id="inpYtStart" placeholder="00:30" value="${m ? secToMMSS(m.start) : '00:00'}">
+          <div class="yt-embed-wrap"><div id="ytPlayerHost"></div></div>
+
+          <div class="trim" id="trim">
+            <div class="trim-head">
+              <span class="field-label" style="margin:0;">Trecho que vai tocar</span>
+              <span class="trim-badge" id="trimDur">—</span>
             </div>
-            <div class="field">
-              <label class="field-label">Duração do trecho (segundos)</label>
-              <input type="number" id="inpYtDuration" min="5" max="120" value="${m ? m.duration : 30}">
+
+            <div class="trim-slider is-loading" id="trimSlider">
+              <div class="trim-rail">
+                <div class="trim-track"></div>
+                <div class="trim-range" id="trimRange"></div>
+                <div class="trim-playhead" id="trimPlayhead" hidden></div>
+              </div>
+              <input type="range" class="trim-input" id="trimStart" min="0" max="100" step="1" value="0" aria-label="Início do trecho" disabled>
+              <input type="range" class="trim-input" id="trimEnd" min="0" max="100" step="1" value="30" aria-label="Fim do trecho" disabled>
+            </div>
+            <div class="trim-scale"><span>00:00</span><span id="trimTotal">carregando…</span></div>
+
+            <div class="trim-times">
+              <div><span>Início</span><b id="trimStartLabel">00:00</b></div>
+              <div><span>Fim</span><b id="trimEndLabel">00:00</b></div>
             </div>
           </div>
+
           <div class="yt-actions">
-            <button class="btn btn-ghost" id="btnYtTest" type="button">▶ Testar trecho</button>
-            <span class="hint" id="ytRangeHint" style="margin:0;"></span>
+            <button class="btn btn-ghost" id="btnYtTest" type="button" disabled>▶ Ouvir trecho</button>
+            <span class="hint" id="ytRangeHint" style="margin:0;">Arraste as bolinhas para escolher o início e o fim. Ao soltar, o trecho toca.</span>
           </div>
         </div>
 
@@ -1125,20 +1187,185 @@
   }
 
   /* ---------------- MUSIC STEP (YouTube) ---------------- */
+  const TRIM_MIN = 5;    // trecho mínimo (s)
+  const TRIM_MAX = 120;  // trecho máximo (s) — o cartão toca no máximo 2 minutos
+  const DEFAULT_TRIM = 30;
+
+  // Carrega a YouTube IFrame API uma única vez
+  let ytApiPromise = null;
+  function loadYouTubeApi(){
+    if(window.YT && window.YT.Player) return Promise.resolve(window.YT);
+    if(!ytApiPromise){
+      ytApiPromise = new Promise((resolve) => {
+        const prev = window.onYouTubeIframeAPIReady;
+        window.onYouTubeIframeAPIReady = () => { if(prev) prev(); resolve(window.YT); };
+        const s = document.createElement('script');
+        s.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(s);
+      });
+    }
+    return ytApiPromise;
+  }
+
+  // Controle do passo de música; existe só enquanto o passo está na tela
+  let musicUI = null;
+
   function bindMusicStep(){
-    const urlInput = document.getElementById('inpYtUrl');
-    const hint = document.getElementById('ytHint');
-    const previewBox = document.getElementById('ytPreviewBox');
-    const frame = document.getElementById('ytFrame');
-    const startInput = document.getElementById('inpYtStart');
-    const durInput = document.getElementById('inpYtDuration');
-    const testBtn = document.getElementById('btnYtTest');
-    const rangeHint = document.getElementById('ytRangeHint');
-    const noMusicRow = document.getElementById('noMusicOption');
+    const $ = (id) => document.getElementById(id);
+    const urlInput = $('inpYtUrl');
+    const hint = $('ytHint');
+    const previewBox = $('ytPreviewBox');
+    const noMusicRow = $('noMusicOption');
+    const slider = $('trimSlider');
+    const startIn = $('trimStart');
+    const endIn = $('trimEnd');
+    const rangeEl = $('trimRange');
+    const playhead = $('trimPlayhead');
+    const testBtn = $('btnYtTest');
+
+    let player = null;
+    let playerVideoId = null;
+    let length = 0;          // duração do vídeo (s); 0 = ainda desconhecida
+    let stopAt = null;       // fim da reprodução de teste
+    let tick = null;
+    let destroyed = false;
 
     noMusicRow.classList.toggle('selected', state.music === null && urlInput.value.trim() === '');
 
-    function applyFrame(){
+    /* ---------- barra de dois cursores ---------- */
+    function pct(sec){ return length ? (sec / length) * 100 : 0; }
+
+    function paint(){
+      const m = state.music;
+      if(!m || !length) return;
+      const s = m.start, e = m.start + m.duration;
+      startIn.value = s;
+      endIn.value = e;
+      rangeEl.style.left = pct(s) + '%';
+      rangeEl.style.width = (pct(e) - pct(s)) + '%';
+      startIn.setAttribute('aria-valuetext', secToMMSS(s));
+      endIn.setAttribute('aria-valuetext', secToMMSS(e));
+      $('trimStartLabel').textContent = secToMMSS(s);
+      $('trimEndLabel').textContent = secToMMSS(e);
+      $('trimDur').textContent = `${m.duration}s`;
+      // Cursor de início por cima quando os dois se encontram no fim da barra
+      startIn.style.zIndex = s > length - TRIM_MIN * 2 ? 5 : 3;
+    }
+
+    // Aplica limites: mínimo/máximo do trecho e fim do vídeo. "moved" = cursor arrastado.
+    function setRange(start, end, moved){
+      start = Math.round(start); end = Math.round(end);
+      start = Math.max(0, Math.min(start, length - TRIM_MIN));
+      end = Math.max(TRIM_MIN, Math.min(end, length));
+      if(end - start < TRIM_MIN){
+        if(moved === 'start') end = Math.min(length, start + TRIM_MIN);
+        else start = Math.max(0, end - TRIM_MIN);
+      }
+      if(end - start > TRIM_MAX){
+        // Arrastar além de 2 min "puxa" o outro cursor junto
+        if(moved === 'start') end = start + TRIM_MAX;
+        else start = end - TRIM_MAX;
+      }
+      state.music.start = start;
+      state.music.duration = end - start;
+      paint();
+      renderPreview();
+    }
+
+    function setLength(len){
+      len = Math.floor(len);
+      if(destroyed || !len || length === len || !state.music) return;
+      length = len;
+      startIn.max = endIn.max = length;
+      $('trimTotal').textContent = secToMMSS(length);
+      slider.classList.remove('is-loading');
+      if(hint.textContent === 'Carregando música…') hint.textContent = '';
+      startIn.disabled = endIn.disabled = false;
+      testBtn.disabled = false;
+      const m = state.music;
+      // Vídeo menor que o trecho salvo: reaproveita o que couber
+      const dur = Math.min(m.duration || DEFAULT_TRIM, TRIM_MAX, length);
+      setRange(Math.min(m.start || 0, Math.max(0, length - dur)), Math.min(m.start || 0, Math.max(0, length - dur)) + dur, 'start');
+    }
+
+    startIn.addEventListener('input', () => {
+      setRange(+startIn.value, state.music.start + state.music.duration, 'start');
+      if(stopAt !== null) stopTest();
+    });
+    endIn.addEventListener('input', () => {
+      setRange(state.music.start, +endIn.value, 'end');
+      if(stopAt !== null) stopTest();
+    });
+    // Ao soltar: início toca o trecho desde o começo; fim toca os últimos 3 segundos
+    startIn.addEventListener('change', () => playRange(state.music.start));
+    endIn.addEventListener('change', () => {
+      const end = state.music.start + state.music.duration;
+      playRange(Math.max(state.music.start, end - 3));
+    });
+
+    /* ---------- player do YouTube ---------- */
+    function playRange(from){
+      if(!player || !player.seekTo || !state.music) return;
+      stopAt = state.music.start + state.music.duration;
+      player.seekTo(from, true);
+      player.playVideo();
+      testBtn.textContent = '■ Parar';
+      playhead.hidden = false;
+      clearInterval(tick);
+      tick = setInterval(() => {
+        const t = player.getCurrentTime ? player.getCurrentTime() : 0;
+        playhead.style.left = pct(t) + '%';
+        if(t >= stopAt - 0.15) stopTest();
+      }, 100);
+    }
+
+    function stopTest(){
+      clearInterval(tick);
+      tick = null;
+      stopAt = null;
+      if(player && player.pauseVideo) player.pauseVideo();
+      playhead.hidden = true;
+      testBtn.textContent = '▶ Ouvir trecho';
+    }
+
+    testBtn.addEventListener('click', () => {
+      if(stopAt !== null) stopTest();
+      else playRange(state.music.start);
+    });
+
+    function showPlayerError(code){
+      const msg = (code === 101 || code === 150)
+        ? '⚠️ O dono desse vídeo não permite que ele toque fora do YouTube. Escolha outra versão da música.'
+        : 'Esse vídeo não pode ser reproduzido — ele pode ser privado ou ter sido removido.';
+      hint.textContent = msg;
+      hint.className = 'hint warn';
+    }
+
+    async function loadPlayer(videoId){
+      const YT = await loadYouTubeApi();
+      if(destroyed || !state.music || state.music.videoId !== videoId) return;
+      if(player && player.cueVideoById){
+        if(playerVideoId !== videoId){ player.cueVideoById({ videoId }); playerVideoId = videoId; }
+        return;
+      }
+      playerVideoId = videoId;
+      player = new YT.Player('ytPlayerHost', {
+        videoId,
+        playerVars: { rel: 0, playsinline: 1, modestbranding: 1 },
+        events: {
+          onReady: (e) => setLength(e.target.getDuration()),
+          onStateChange: (e) => {
+            // Duração às vezes só chega depois que o vídeo é "cued"
+            if(!length) setLength(e.target.getDuration());
+            if(e.data === YT.PlayerState.PAUSED && stopAt !== null && e.target.getCurrentTime() < stopAt - 0.5) stopTest();
+          },
+          onError: (e) => showPlayerError(e.data),
+        },
+      });
+    }
+
+    /* ---------- link ---------- */
+    function applyUrl(){
       const id = extractYouTubeId(urlInput.value.trim());
       if(!id){
         hint.textContent = 'Não encontramos um link válido do YouTube. Cole a URL completa.';
@@ -1146,22 +1373,22 @@
         previewBox.style.display = 'none';
         return;
       }
-      hint.textContent = '';
-      hint.className = 'hint';
       previewBox.style.display = 'block';
-
-      const start = mmssToSec(startInput.value) ?? 0;
-      const duration = Math.max(5, Math.min(120, parseInt(durInput.value || '30', 10)));
-      const end = start + duration;
-
-      frame.src = `https://www.youtube.com/embed/${id}?start=${start}&end=${end}&rel=0`;
-      rangeHint.textContent = `Trecho: ${secToMMSS(start)} até ${secToMMSS(end)} (${duration}s)`;
-
       const same = state.music && state.music.videoId === id;
-      state.music = { videoId: id, url: urlInput.value.trim(), start, duration,
-        title: same ? state.music.title : null,
-        channel: same ? state.music.channel : null,
-        videoLength: same ? state.music.videoLength : null };
+      if(!same){
+        stopTest();
+        hint.textContent = 'Carregando música…';
+        hint.className = 'hint';
+        length = 0;
+        slider.classList.add('is-loading');
+        startIn.disabled = endIn.disabled = testBtn.disabled = true;
+        $('trimTotal').textContent = 'carregando…';
+        state.music = { videoId: id, url: urlInput.value.trim(), start: 0, duration: DEFAULT_TRIM, title: null, channel: null, videoLength: null };
+      } else {
+        state.music.url = urlInput.value.trim();
+        if(state.music.videoLength) setLength(state.music.videoLength);
+      }
+      loadPlayer(id);
       fetchTitle(id);
       renderPreview();
     }
@@ -1169,32 +1396,12 @@
     let debounceTimer = null;
     urlInput.addEventListener('input', () => {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(applyFrame, 400);
+      debounceTimer = setTimeout(applyUrl, 400);
       noMusicRow.classList.remove('selected');
     });
 
-    if(startInput){
-      startInput.addEventListener('change', () => {
-        const s = mmssToSec(startInput.value);
-        if(s === null){
-          startInput.value = '00:00';
-        }
-        if(state.music){ state.music.start = mmssToSec(startInput.value) ?? 0; renderPreview(); }
-      });
-    }
-    if(durInput){
-      durInput.addEventListener('change', () => {
-        let d = parseInt(durInput.value || '30', 10);
-        d = Math.max(5, Math.min(120, isNaN(d) ? 30 : d));
-        durInput.value = d;
-        if(state.music){ state.music.duration = d; renderPreview(); }
-      });
-    }
-    if(testBtn){
-      testBtn.addEventListener('click', applyFrame);
-    }
-
     noMusicRow.addEventListener('click', () => {
+      stopTest();
       state.music = null;
       urlInput.value = '';
       previewBox.style.display = 'none';
@@ -1204,9 +1411,16 @@
       renderPreview();
     });
 
-    if(state.music && state.music.videoId){
-      applyFrame();
-    }
+    musicUI = {
+      setLength,
+      destroy(){
+        destroyed = true;
+        clearInterval(tick);
+        if(player && player.destroy) player.destroy();
+      },
+    };
+
+    if(state.music && state.music.videoId) applyUrl();
   }
 
   // Converte duração ISO 8601 da API (ex: PT3M42S) em segundos
@@ -1250,12 +1464,8 @@
           }
         }
 
-        // Garante que o trecho escolhido não passa do fim do vídeo
-        const len = state.music.videoLength;
-        const rangeHint = document.getElementById('ytRangeHint');
-        if(len && rangeHint && state.music.start + state.music.duration > len){
-          rangeHint.textContent = `O vídeo tem só ${secToMMSS(len)} — ajuste o início ou a duração do trecho.`;
-        }
+        // A API costuma responder antes do player: já libera a barra com a duração certa
+        if(musicUI && state.music.videoLength) musicUI.setLength(state.music.videoLength);
 
         renderPreview();
       })
