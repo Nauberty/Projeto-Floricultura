@@ -46,12 +46,17 @@
     *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
   }
 
+  @media (max-width:600px){
+    body{ padding:24px 14px 56px; }
+  }
+
   .brand{
     max-width:1180px;
     margin:0 auto 34px;
     display:flex;
     align-items:center;
     gap:14px;
+    flex-wrap:wrap;
   }
   .brand svg{width:34px;height:34px;flex:none;}
   .brand-text{display:flex;flex-direction:column;line-height:1.15;}
@@ -67,6 +72,9 @@
     font-size:22px;
     font-weight:600;
   }
+  @media (max-width:600px){
+    .brand-text .name{ font-size:19px; }
+  }
 
   .layout{
     max-width:1180px;
@@ -79,6 +87,7 @@
 
   @media (max-width:940px){
     .layout{grid-template-columns:1fr;}
+    .preview-wrap{ position:static !important; }
   }
 
   /* ---------- LEFT: WIZARD ---------- */
@@ -91,7 +100,7 @@
     position:relative;
     overflow:hidden;
   }
-  @media (max-width:600px){ .wizard{padding:26px 20px 24px;} }
+  @media (max-width:600px){ .wizard{padding:24px 18px 22px; border-radius:16px;} }
 
   .sprig{
     position:absolute;
@@ -102,6 +111,7 @@
     pointer-events:none;
     transform:translate(18%,-22%);
   }
+  @media (max-width:600px){ .sprig{ width:100px; height:100px; } }
   .sprig path, .sprig ellipse{ transition:opacity .5s ease, transform .5s ease; }
 
   /* step tracker */
@@ -112,16 +122,18 @@
     margin-bottom:30px;
     position:relative;
     overflow-x:auto;
-    padding-bottom:4px;
+    padding-bottom:6px;
+    -webkit-overflow-scrolling:touch;
   }
-  .tracker::-webkit-scrollbar{height:0;}
+  .tracker::-webkit-scrollbar{height:4px;}
+  .tracker::-webkit-scrollbar-thumb{background:var(--paper-edge); border-radius:4px;}
   .step-node{
     display:flex;
     flex-direction:column;
     align-items:center;
     gap:8px;
     flex:1;
-    min-width:64px;
+    min-width:58px;
     position:relative;
   }
   .step-node:not(:last-child)::after{
@@ -145,6 +157,7 @@
     color:var(--ink-soft);
     z-index:1;
     transition:all .25s ease;
+    flex:none;
   }
   .step-node.active .dot{
     border-color:var(--sage);
@@ -160,10 +173,10 @@
   .step-node.done .dot::after{ content:'✓'; }
   .step-node.done .dot span{ display:none; }
   .step-label{
-    font-size:10.5px;
+    font-size:10px;
     color:var(--ink-soft);
     text-align:center;
-    max-width:80px;
+    max-width:76px;
     line-height:1.25;
   }
   .step-node.active .step-label{ color:var(--ink); font-weight:600; }
@@ -183,6 +196,7 @@
     font-weight:600;
     margin:0 0 10px;
   }
+  @media (max-width:600px){ .step-title{ font-size:24px; } }
   .step-desc{
     color:var(--ink-soft);
     font-size:14.5px;
@@ -192,7 +206,7 @@
   }
 
   .field{ margin-bottom:8px; }
-  input[type=text], input[type=tel], input[type=email], input[type=date], textarea, select{
+  input[type=text], input[type=tel], input[type=email], input[type=date], input[type=number], textarea, select{
     width:100%;
     background:var(--paper-deep);
     border:1.5px solid var(--paper-edge);
@@ -219,6 +233,10 @@
     padding:11px 14px;
     border-radius:10px;
     margin-top:14px;
+  }
+  .hint.ok{
+    background:#EAF1E4; border:1px solid #C4D6B4; color:var(--sage-deep);
+    padding:11px 14px; border-radius:10px; margin-top:14px;
   }
   .hint.error{ color:var(--rose-deep); }
   .charcount{ font-size:12px; color:var(--ink-soft); text-align:right; margin-top:6px; }
@@ -268,9 +286,9 @@
   .switch.on::after{ left:21px; }
 
   /* style pills (message font) */
-  .style-pill-row{ display:flex; gap:10px; margin-bottom:18px; }
+  .style-pill-row{ display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
   .style-pill{
-    flex:1; padding:12px; text-align:center;
+    flex:1; min-width:90px; padding:12px; text-align:center;
     border-radius:12px; border:1.5px solid var(--paper-edge);
     background:var(--paper-deep); cursor:pointer; font-size:14px;
     transition:all .18s ease;
@@ -316,33 +334,40 @@
   }
   .emoji-btn.selected{ border-color:var(--gold); background:#FBF0DC; transform:translateY(-2px); }
 
-  /* music list */
-  .song-list{ display:flex; flex-direction:column; gap:10px; }
-  .song-item{
-    display:flex; align-items:center; gap:14px;
+  /* youtube music step */
+  .yt-embed-wrap{
+    position:relative; width:100%; aspect-ratio:16/9;
+    border-radius:12px; overflow:hidden; background:#111;
+    border:1.5px solid var(--paper-edge); margin-top:16px;
+  }
+  .yt-embed-wrap iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+
+  .yt-actions{ display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap; }
+
+  .no-music-row{
+    display:flex; align-items:center; gap:12px;
     padding:12px 14px; border-radius:12px;
     border:1.5px solid var(--paper-edge); background:var(--paper-deep);
-    cursor:pointer; transition:all .15s ease;
+    cursor:pointer; transition:all .15s ease; margin-top:18px;
   }
-  .song-item.selected{ border-color:var(--sage); background:#EEF1E7; }
-  .song-icon{
+  .no-music-row.selected{ border-color:var(--sage); background:#EEF1E7; }
+  .no-music-row .song-icon{
     width:36px; height:36px; border-radius:8px; flex:none;
     display:flex; align-items:center; justify-content:center;
-    background:var(--sage); color:#fff; font-size:15px;
+    background:var(--ink-soft); color:#fff; font-size:15px;
   }
-  .song-meta{ display:flex; flex-direction:column; line-height:1.3; }
-  .song-title{ font-size:13.5px; font-weight:600; }
-  .song-sub{ font-size:11.5px; color:var(--ink-soft); }
 
   /* nav buttons */
   .nav-row{
     display:flex; justify-content:space-between; align-items:center;
     margin-top:34px; padding-top:22px; border-top:1px solid var(--paper-edge);
+    gap:12px; flex-wrap:wrap;
   }
   .btn{
     font-family:'Inter',sans-serif; font-size:14.5px; font-weight:600;
     padding:13px 26px; border-radius:12px; border:none; cursor:pointer;
     transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+    white-space:nowrap;
   }
   .btn:active{ transform:translateY(1px); }
   .btn-ghost{
@@ -357,15 +382,50 @@
   }
   .btn-primary:hover{ box-shadow:0 14px 28px -10px rgba(78,92,65,0.65); }
 
-  .link-line{ margin-top:20px; font-size:13px; color:var(--ink-soft); display:flex; align-items:center; gap:8px;}
-  .link-line b{ color:var(--ink); font-weight:600; }
+  @media (max-width:480px){
+    .nav-row{ flex-direction:column-reverse; align-items:stretch; }
+    .nav-row .btn{ width:100%; text-align:center; }
+  }
+
+  .link-line{ margin-top:20px; font-size:13px; color:var(--ink-soft); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .link-line b{ color:var(--ink); font-weight:600; word-break:break-all; }
   .link-line a{ color:var(--sage-deep); text-decoration:none; }
+
+  /* final step: link + qr */
+  .final-link-box{
+    display:flex; gap:10px; align-items:stretch; margin-top:6px; flex-wrap:wrap;
+  }
+  .final-link-box input{
+    flex:1; min-width:200px; font-family:'IBM Plex Mono',monospace; font-size:13px;
+    background:var(--paper-deep);
+  }
+  .final-link-box .btn{ flex:none; }
+  @media (max-width:480px){
+    .final-link-box{ flex-direction:column; }
+    .final-link-box .btn{ width:100%; }
+  }
+
+  .qr-section{
+    margin-top:30px; display:flex; gap:24px; align-items:center;
+    background:var(--paper-deep); border:1.5px solid var(--paper-edge);
+    border-radius:16px; padding:22px; flex-wrap:wrap;
+  }
+  .qr-box{
+    width:120px; height:120px; border-radius:12px; background:#fff;
+    border:1px solid var(--paper-edge); flex:none;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  .qr-box img{ width:100%; height:100%; object-fit:contain; }
+  .qr-info{ flex:1; min-width:180px; }
+  .qr-info p{ margin:0 0 12px; font-size:13.5px; color:var(--ink-soft); line-height:1.5; }
+  .qr-actions{ display:flex; gap:10px; flex-wrap:wrap; }
 
   /* ---------- RIGHT: PREVIEW ---------- */
   .preview-wrap{ position:sticky; top:28px; }
   .preview-label{
     display:flex; align-items:center; gap:8px;
     font-size:13px; color:var(--ink-soft); margin-bottom:14px;
+    flex-wrap:wrap;
   }
   .preview-label b{ color:var(--ink); font-family:'Fraunces',serif; font-size:15px; font-weight:600;}
 
@@ -380,6 +440,8 @@
     min-height:560px;
     box-shadow:var(--shadow-soft);
   }
+  @media (max-width:600px){ .stage{ padding:24px 16px 22px; border-radius:18px; min-height:auto; } }
+
   .petal{
     position:absolute;
     width:14px; height:18px;
@@ -409,6 +471,7 @@
     box-shadow:0 20px 45px -14px rgba(0,0,0,0.55);
     margin-top:0;
   }
+  @media (max-width:600px){ .card{ padding:20px 16px 18px; } }
   .card::before{
     content:'';
     position:absolute; top:-9px; left:50%; transform:translateX(-50%);
@@ -463,9 +526,14 @@
   .card-emojis{ position:absolute; top:14px; right:14px; font-size:17px; display:flex; gap:2px; }
 
   .player{
-    margin-top:16px; background:var(--plum); border-radius:12px; padding:12px 14px;
+    margin-top:16px; background:var(--plum); border-radius:12px; padding:10px 14px;
     display:flex; align-items:center; gap:12px;
   }
+  .player-thumb{
+    width:36px; height:36px; border-radius:8px; flex:none; overflow:hidden;
+    background:var(--sage);
+  }
+  .player-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
   .player-play{
     width:32px; height:32px; border-radius:50%; background:var(--sage);
     display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px;
@@ -486,6 +554,21 @@
     text-align:center; margin-top:18px; font-family:'IBM Plex Mono',monospace;
     font-size:11px; color:rgba(255,255,255,0.5); word-break:break-all;
   }
+
+  /* print-only QR area */
+  #printArea{ display:none; }
+  @media print{
+    body.printing-qr > *:not(#printArea){ display:none !important; }
+    body.printing-qr{ padding:0; background:#fff; }
+    body.printing-qr #printArea{ display:flex !important; }
+  }
+  #printArea{
+    flex-direction:column; align-items:center; justify-content:center;
+    min-height:100vh; text-align:center; gap:14px; padding:40px;
+  }
+  #printArea img{ width:220px; height:220px; }
+  #printArea h3{ font-family:'Fraunces',serif; font-size:22px; margin:0; }
+  #printArea p{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:#555; margin:0; }
 </style>
 </head>
 <body>
@@ -517,12 +600,12 @@
 
       <div id="step-content"></div>
 
-      <div class="nav-row">
+      <div class="nav-row" id="navRow">
         <button class="btn btn-ghost" id="btnPrev">Anterior</button>
         <button class="btn btn-primary" id="btnNext">Próximo</button>
       </div>
 
-      <div class="link-line">
+      <div class="link-line" id="linkLineWrap">
         <span>Veja como ficará 👇</span>
         <a href="#preview"><b id="urlPreviewInline">floriculturaalameda.com.br/cartao/...</b></a>
       </div>
@@ -552,6 +635,7 @@
           <div class="card-from" id="pvFrom">Com carinho, <b>Seu nome</b></div>
 
           <div class="player" id="pvPlayer" style="display:none;">
+            <div class="player-thumb" id="pvThumb"></div>
             <div class="player-play" id="pvPlayBtn">▶</div>
             <div class="player-meta">
               <div class="player-title" id="pvSongTitle">—</div>
@@ -567,8 +651,18 @@
 
   </div>
 
+  <div id="printArea">
+    <img id="printQrImg" src="" alt="QR code">
+    <h3 id="printCardTitle">Título do cartão</h3>
+    <p id="printCardUrl">floriculturaalameda.com.br/cartao/...</p>
+  </div>
+
+<script src="config.js"></script>
 <script>
 (function(){
+
+  // Chave da YouTube Data API v3 — definida em config.js (fora do git). Sem ela, usa noembed.com.
+  const YT_API_KEY = (window.APP_CONFIG && window.APP_CONFIG.YOUTUBE_API_KEY) || '';
 
   const state = {
     slug: '',
@@ -582,7 +676,7 @@
     msgStyle: 'sans',
     photos: [],
     emojis: [],
-    song: null
+    music: null // { videoId, url, start(seconds), duration(seconds), title }
   };
 
   const CATEGORIES = [
@@ -596,13 +690,6 @@
 
   const EMOJIS = ['🌸','🌹','🌻','🌷','🌺','💐','🍃','✨','💛','🤍'];
 
-  const SONGS = [
-    { id:'s1', title:'Manhã de Jardim', sub:'instrumental · piano suave' },
-    { id:'s2', title:'Bossa das Flores', sub:'violão · bossa nova' },
-    { id:'s3', title:'Luz da Tarde', sub:'acústico · voz e violão' },
-    { id:'s4', title:'Sem música', sub:'o cartão fica só com a mensagem' },
-  ];
-
   const STEPS = [
     { key:'slug', label:'Nome da Página' },
     { key:'title', label:'Título do Cartão' },
@@ -612,8 +699,10 @@
     { key:'message', label:'Mensagem' },
     { key:'photos', label:'Fotos' },
     { key:'emoji', label:'Selo / Emoji' },
-    { key:'song', label:'Música' },
+    { key:'music', label:'Música' },
+    { key:'final', label:'Link Pronto' },
   ];
+  const FINAL_INDEX = STEPS.length - 1;
 
   let current = 0;
 
@@ -629,6 +718,21 @@
     .replace(/[^a-zA-Z0-9\s-]/g,'')
     .trim();
 
+  const pad2 = (n) => String(n).padStart(2,'0');
+  const secToMMSS = (s) => `${pad2(Math.floor(s/60))}:${pad2(Math.floor(s%60))}`;
+  const mmssToSec = (str) => {
+    const m = String(str).trim().match(/^(\d{1,3}):([0-5]?\d)$/);
+    if(!m) return null;
+    return (parseInt(m[1],10) * 60) + parseInt(m[2],10);
+  };
+
+  function extractYouTubeId(url){
+    if(!url) return null;
+    const re = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const m = url.match(re);
+    return m ? m[1] : null;
+  }
+
   /* ---------------- TRACKER ---------------- */
   function renderTracker(){
     const t = document.getElementById('tracker');
@@ -638,6 +742,7 @@
       if(i < current) node.classList.add('done');
       if(i === current) node.classList.add('active');
       node.innerHTML = `<div class="dot"><span>${i+1}</span></div><div class="step-label">${s.label}</div>`;
+      const reachable = i <= current || (current === FINAL_INDEX);
       node.style.cursor = i <= current ? 'pointer' : 'default';
       node.addEventListener('click', () => { if(i <= current){ current = i; render(); }});
       t.appendChild(node);
@@ -655,6 +760,7 @@
     "M105 108c-5-7-12-11-20-12c2 6 3 13 1 18c7-1 14-3 19-6Z",
     "M112 118c-3-8-9-13-16-15c0 6 0 13-3 18c7 0 14-1 19-3Z",
     "M118 128c-1-8-6-14-12-18c-1 7-3 13-7 18c6 1 13 1 19 0Z",
+    "M124 137c0-9-4-16-11-21c-2 7-6 13-11 17c7 3 15 5 22 4Z",
   ];
   function renderSprig(){
     const g = document.getElementById('sprig-leaves');
@@ -672,9 +778,9 @@
   }
 
   /* ---------------- STEP RENDERERS ---------------- */
-  function wrap(eyebrow, title, desc, bodyHtml){
+  function wrap(title, desc, bodyHtml){
     return `
-      <div class="step-eyebrow">${eyebrow}</div>
+      <div class="step-eyebrow">Passo ${current+1} de ${STEPS.length}</div>
       <h2 class="step-title">${title}</h2>
       <p class="step-desc">${desc}</p>
       ${bodyHtml}
@@ -686,7 +792,7 @@
     let html = '';
 
     if(current === 0){
-      html = wrap('Passo 1 de 9','Nome da Página',
+      html = wrap('Nome da Página',
         'Escolha o endereço único do seu cartão — é o que vai aparecer no link enviado.',
         `
         <div class="field">
@@ -698,7 +804,7 @@
     }
 
     if(current === 1){
-      html = wrap('Passo 2 de 9','Título do Cartão',
+      html = wrap('Título do Cartão',
         'O título que vai aparecer em destaque, logo no topo do cartão.',
         `
         <div class="field">
@@ -709,7 +815,7 @@
     }
 
     if(current === 2){
-      html = wrap('Passo 3 de 9','De quem é este cartão',
+      html = wrap('De quem é este cartão',
         'Assim quem recebe sabe quem enviou o carinho.',
         `
         <div class="row2">
@@ -727,13 +833,13 @@
     }
 
     if(current === 3){
-      html = wrap('Passo 4 de 9','Categoria',
+      html = wrap('Categoria',
         'Isso ajusta o tom do cartão e sugere flores combinando com a ocasião.',
         `<div class="chip-grid" id="catGrid"></div>`);
     }
 
     if(current === 4){
-      html = wrap('Passo 5 de 9','Data Especial',
+      html = wrap('Data Especial',
         'Quer mostrar uma contagem de dias no cartão? (ex: "há 3 anos juntos")',
         `
         <div class="toggle-row">
@@ -749,7 +855,7 @@
     }
 
     if(current === 5){
-      html = wrap('Passo 6 de 9','Mensagem',
+      html = wrap('Mensagem',
         'Escreva o recado com carinho. Você também escolhe o estilo da letra.',
         `
         <div class="style-pill-row">
@@ -765,7 +871,7 @@
     }
 
     if(current === 6){
-      html = wrap('Passo 7 de 9','Fotos',
+      html = wrap('Fotos',
         'Adicione até 4 fotos para acompanhar o cartão. A primeira aparece em destaque.',
         `
         <div class="dropzone" id="dropzone">
@@ -778,15 +884,77 @@
     }
 
     if(current === 7){
-      html = wrap('Passo 8 de 9','Selo / Emoji',
+      html = wrap('Selo / Emoji',
         'Escolha até 3 emojis para decorar o canto do cartão, como um selo.',
         `<div class="emoji-grid" id="emojiGrid"></div>`);
     }
 
     if(current === 8){
-      html = wrap('Passo 9 de 9','Escolha uma música',
-        'A música toca junto quando abrirem o cartão.',
-        `<div class="song-list" id="songList"></div>`);
+      const m = state.music;
+      html = wrap('Escolha uma música',
+        'Cole o link de uma música do YouTube e escolha o trecho que vai tocar quando abrirem o cartão.',
+        `
+        <div class="field">
+          <label class="field-label">Link do YouTube</label>
+          <input type="text" id="inpYtUrl" placeholder="https://www.youtube.com/watch?v=..." value="${m ? m.url : ''}">
+        </div>
+        <div class="hint" id="ytHint">${m ? '' : 'Cole um link do YouTube para continuar.'}</div>
+
+        <div id="ytPreviewBox" style="display:${m ? 'block':'none'};">
+          <div class="yt-embed-wrap">
+            <iframe id="ytFrame" src="" title="Prévia da música" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+          </div>
+          <div class="row2" style="margin-top:16px;">
+            <div class="field">
+              <label class="field-label">Início do trecho (mm:ss)</label>
+              <input type="text" id="inpYtStart" placeholder="00:30" value="${m ? secToMMSS(m.start) : '00:00'}">
+            </div>
+            <div class="field">
+              <label class="field-label">Duração do trecho (segundos)</label>
+              <input type="number" id="inpYtDuration" min="5" max="120" value="${m ? m.duration : 30}">
+            </div>
+          </div>
+          <div class="yt-actions">
+            <button class="btn btn-ghost" id="btnYtTest" type="button">▶ Testar trecho</button>
+            <span class="hint" id="ytRangeHint" style="margin:0;"></span>
+          </div>
+        </div>
+
+        <div class="no-music-row" id="noMusicOption">
+          <div class="song-icon">✕</div>
+          <div>
+            <div style="font-size:13.5px; font-weight:600;">Sem música</div>
+            <div style="font-size:11.5px; color:var(--ink-soft);">O cartão fica só com a mensagem</div>
+          </div>
+        </div>
+        `);
+    }
+
+    if(current === FINAL_INDEX){
+      const fullUrl = 'floriculturaalameda.com.br/cartao/' + (state.slug || 'seu-link');
+      html = `
+        <div class="step-eyebrow">Passo ${current+1} de ${STEPS.length}</div>
+        <h2 class="step-title">Cartão pronto! 🌸</h2>
+        <p class="step-desc">Copie o link para enviar por mensagem, ou imprima o QR code para colar junto com o buquê.</p>
+
+        <label class="field-label">Link do cartão</label>
+        <div class="final-link-box">
+          <input type="text" id="finalLinkInput" readonly value="${fullUrl}">
+          <button class="btn btn-primary" id="btnCopyLink">Copiar link</button>
+        </div>
+        <div class="hint ok" id="copyFeedback" style="display:none;">Link copiado! ✅</div>
+
+        <div class="qr-section">
+          <div class="qr-box" id="qrBox"><img id="qrImg" src="" alt="QR code do cartão"></div>
+          <div class="qr-info">
+            <p>Escaneie para abrir o cartão direto no celular — ideal para colar uma etiqueta no buquê.</p>
+            <div class="qr-actions">
+              <button class="btn btn-ghost" id="btnPrintQr" type="button">🖨️ Imprimir QR Code</button>
+              <button class="btn btn-ghost" id="btnEditCard" type="button">✎ Editar cartão</button>
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     c.innerHTML = html;
@@ -917,25 +1085,162 @@
     }
 
     if(current === 8){
-      const list = document.getElementById('songList');
-      list.innerHTML = '';
-      SONGS.forEach(song => {
-        const item = el('div','song-item' + (state.song && state.song.id === song.id ? ' selected':''));
-        item.innerHTML = `
-          <div class="song-icon">${song.id === 's4' ? '✕' : '♪'}</div>
-          <div class="song-meta">
-            <div class="song-title">${song.title}</div>
-            <div class="song-sub">${song.sub}</div>
-          </div>
-        `;
-        item.addEventListener('click', () => {
-          state.song = song.id === 's4' ? null : song;
-          bindStepEvents();
-          renderPreview();
-        });
-        list.appendChild(item);
+      bindMusicStep();
+    }
+
+    if(current === FINAL_INDEX){
+      bindFinalStep();
+    }
+  }
+
+  /* ---------------- MUSIC STEP (YouTube) ---------------- */
+  function bindMusicStep(){
+    const urlInput = document.getElementById('inpYtUrl');
+    const hint = document.getElementById('ytHint');
+    const previewBox = document.getElementById('ytPreviewBox');
+    const frame = document.getElementById('ytFrame');
+    const startInput = document.getElementById('inpYtStart');
+    const durInput = document.getElementById('inpYtDuration');
+    const testBtn = document.getElementById('btnYtTest');
+    const rangeHint = document.getElementById('ytRangeHint');
+    const noMusicRow = document.getElementById('noMusicOption');
+
+    noMusicRow.classList.toggle('selected', state.music === null && urlInput.value.trim() === '');
+
+    function applyFrame(){
+      const id = extractYouTubeId(urlInput.value.trim());
+      if(!id){
+        hint.textContent = 'Não encontramos um link válido do YouTube. Cole a URL completa.';
+        hint.className = 'hint error';
+        previewBox.style.display = 'none';
+        return;
+      }
+      hint.textContent = '';
+      hint.className = 'hint';
+      previewBox.style.display = 'block';
+
+      const start = mmssToSec(startInput.value) ?? 0;
+      const duration = Math.max(5, Math.min(120, parseInt(durInput.value || '30', 10)));
+      const end = start + duration;
+
+      frame.src = `https://www.youtube.com/embed/${id}?start=${start}&end=${end}&rel=0`;
+      rangeHint.textContent = `Trecho: ${secToMMSS(start)} até ${secToMMSS(end)} (${duration}s)`;
+
+      const same = state.music && state.music.videoId === id;
+      state.music = { videoId: id, url: urlInput.value.trim(), start, duration,
+        title: same ? state.music.title : null,
+        channel: same ? state.music.channel : null,
+        videoLength: same ? state.music.videoLength : null };
+      fetchTitle(id);
+      renderPreview();
+    }
+
+    let debounceTimer = null;
+    urlInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(applyFrame, 400);
+      noMusicRow.classList.remove('selected');
+    });
+
+    if(startInput){
+      startInput.addEventListener('change', () => {
+        const s = mmssToSec(startInput.value);
+        if(s === null){
+          startInput.value = '00:00';
+        }
+        if(state.music){ state.music.start = mmssToSec(startInput.value) ?? 0; renderPreview(); }
       });
     }
+    if(durInput){
+      durInput.addEventListener('change', () => {
+        let d = parseInt(durInput.value || '30', 10);
+        d = Math.max(5, Math.min(120, isNaN(d) ? 30 : d));
+        durInput.value = d;
+        if(state.music){ state.music.duration = d; renderPreview(); }
+      });
+    }
+    if(testBtn){
+      testBtn.addEventListener('click', applyFrame);
+    }
+
+    noMusicRow.addEventListener('click', () => {
+      state.music = null;
+      urlInput.value = '';
+      previewBox.style.display = 'none';
+      hint.textContent = 'Cole um link do YouTube para continuar.';
+      hint.className = 'hint';
+      noMusicRow.classList.add('selected');
+      renderPreview();
+    });
+
+    if(state.music && state.music.videoId){
+      applyFrame();
+    }
+  }
+
+  // Converte duração ISO 8601 da API (ex: PT3M42S) em segundos
+  function isoDurationToSec(iso){
+    const m = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso || '');
+    if(!m) return null;
+    return (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0);
+  }
+
+  function fetchTitle(videoId){
+    if(!YT_API_KEY){ fetchTitleNoembed(videoId); return; }
+
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,status&id=${videoId}&key=${encodeURIComponent(YT_API_KEY)}`;
+    fetch(url)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        if(!state.music || state.music.videoId !== videoId) return;
+        const hint = document.getElementById('ytHint');
+        const video = data.items && data.items[0];
+
+        if(!video){
+          if(hint){
+            hint.textContent = 'Esse vídeo não foi encontrado — ele pode ser privado ou ter sido removido.';
+            hint.className = 'hint error';
+          }
+          return;
+        }
+
+        state.music.title = video.snippet.title;
+        state.music.channel = video.snippet.channelTitle;
+        state.music.videoLength = isoDurationToSec(video.contentDetails.duration);
+
+        if(hint){
+          if(video.status && video.status.embeddable === false){
+            hint.textContent = '⚠️ O dono desse vídeo não permite que ele toque fora do YouTube. Escolha outra versão da música.';
+            hint.className = 'hint warn';
+          } else {
+            hint.textContent = `🎵 ${video.snippet.title} · ${video.snippet.channelTitle}` +
+              (state.music.videoLength ? ` · ${secToMMSS(state.music.videoLength)}` : '');
+            hint.className = 'hint';
+          }
+        }
+
+        // Garante que o trecho escolhido não passa do fim do vídeo
+        const len = state.music.videoLength;
+        const rangeHint = document.getElementById('ytRangeHint');
+        if(len && rangeHint && state.music.start + state.music.duration > len){
+          rangeHint.textContent = `O vídeo tem só ${secToMMSS(len)} — ajuste o início ou a duração do trecho.`;
+        }
+
+        renderPreview();
+      })
+      .catch(() => fetchTitleNoembed(videoId)); // chave inválida / cota esgotada — tenta o caminho sem chave
+  }
+
+  function fetchTitleNoembed(videoId){
+    fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if(data && data.title && state.music && state.music.videoId === videoId){
+          state.music.title = data.title;
+          renderPreview();
+        }
+      })
+      .catch(() => { /* sem internet ou bloqueado — mantém rótulo genérico */ });
   }
 
   function renderThumbs(){
@@ -953,6 +1258,54 @@
       t.appendChild(th);
     });
   }
+
+  /* ---------------- FINAL STEP (link + qr) ---------------- */
+  function fullPublicUrl(){
+    return 'floriculturaalameda.com.br/cartao/' + (state.slug || 'seu-link');
+  }
+
+  function bindFinalStep(){
+    const linkInput = document.getElementById('finalLinkInput');
+    const copyBtn = document.getElementById('btnCopyLink');
+    const feedback = document.getElementById('copyFeedback');
+    const qrImg = document.getElementById('qrImg');
+    const printBtn = document.getElementById('btnPrintQr');
+    const editBtn = document.getElementById('btnEditCard');
+
+    const url = fullPublicUrl();
+    const fullHttpUrl = 'https://' + url;
+    linkInput.value = url;
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(fullHttpUrl)}`;
+
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(fullHttpUrl).then(() => {
+        feedback.style.display = 'block';
+        setTimeout(() => feedback.style.display = 'none', 2500);
+      }).catch(() => {
+        linkInput.select();
+        document.execCommand('copy');
+        feedback.style.display = 'block';
+        setTimeout(() => feedback.style.display = 'none', 2500);
+      });
+    });
+
+    printBtn.addEventListener('click', () => {
+      document.getElementById('printQrImg').src = qrImg.src;
+      document.getElementById('printCardTitle').textContent = state.title || 'Cartão com Flores';
+      document.getElementById('printCardUrl').textContent = url;
+      document.body.classList.add('printing-qr');
+      window.print();
+    });
+
+    editBtn.addEventListener('click', () => {
+      current = 0;
+      render();
+    });
+  }
+
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('printing-qr');
+  });
 
   /* ---------------- PREVIEW ---------------- */
   let playing = false;
@@ -994,10 +1347,12 @@
     document.getElementById('pvEmojis').textContent = state.emojis.join(' ');
 
     const player = document.getElementById('pvPlayer');
-    if(state.song){
+    const thumb = document.getElementById('pvThumb');
+    if(state.music && state.music.videoId){
       player.style.display = 'flex';
-      document.getElementById('pvSongTitle').textContent = state.song.title;
-      document.getElementById('pvSongSub').textContent = state.song.sub;
+      thumb.innerHTML = `<img src="https://img.youtube.com/vi/${state.music.videoId}/default.jpg" alt="">`;
+      document.getElementById('pvSongTitle').textContent = state.music.title || 'Trecho selecionado do YouTube';
+      document.getElementById('pvSongSub').textContent = (state.music.channel ? state.music.channel + ' · ' : '') + `${secToMMSS(state.music.start)} · ${state.music.duration}s`;
     } else {
       player.style.display = 'none';
     }
@@ -1016,8 +1371,19 @@
     renderTracker();
     renderStepContent();
     renderSprig();
-    document.getElementById('btnPrev').disabled = current === 0;
-    document.getElementById('btnNext').textContent = current === STEPS.length - 1 ? 'Finalizar' : 'Próximo';
+
+    const navRow = document.getElementById('navRow');
+    const linkLine = document.getElementById('linkLineWrap');
+
+    if(current === FINAL_INDEX){
+      navRow.style.display = 'none';
+      linkLine.style.display = 'none';
+    } else {
+      navRow.style.display = 'flex';
+      linkLine.style.display = 'flex';
+      document.getElementById('btnPrev').disabled = current === 0;
+      document.getElementById('btnNext').textContent = current === STEPS.length - 2 ? 'Finalizar' : 'Próximo';
+    }
   }
 
   document.getElementById('btnPrev').addEventListener('click', () => {
@@ -1036,8 +1402,6 @@
     if(current < STEPS.length - 1){
       current++;
       render();
-    } else {
-      alert('Cartão pronto! Link: floriculturaalameda.com.br/cartao/' + (state.slug || 'seu-link'));
     }
   });
 
