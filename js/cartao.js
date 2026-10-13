@@ -11,7 +11,7 @@
   /* ---------------- pétalas ---------------- */
   function spawnPetals(){
     const box = $('petals');
-    const colors = ['var(--rose)', 'var(--gold)', '#d9a3aa', 'var(--sage)'];
+    const colors = ['var(--rose)', 'var(--gold)', '#d9a3aa', '#EADCC0']; // rosa, dourado e creme sobre o verde
     for(let i = 0; i < 14; i++){
       const p = document.createElement('span');
       p.className = 'petal';
@@ -109,7 +109,7 @@
 
   function setPlayUI(on){
     isPlaying = on;
-    $('cPlay').textContent = on ? '❚❚' : '▶';
+    $('cPlay').classList.toggle('is-playing', on);
     $('cPlay').setAttribute('aria-label', on ? 'Pausar música' : 'Tocar música');
   }
 

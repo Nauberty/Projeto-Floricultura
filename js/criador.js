@@ -251,7 +251,7 @@
             <div class="trim-scale"><span>00:00</span><span id="trimTotal">carregando…</span></div>
 
             <div class="mcard-controls">
-              <button class="mcard-play" id="btnYtTest" type="button" aria-label="Ouvir trecho" disabled>▶</button>
+              <button class="mcard-play play-btn" id="btnYtTest" type="button" aria-label="Ouvir trecho" disabled><svg class="ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.6v12.8a1 1 0 0 0 1.53.85l10.1-6.4a1 1 0 0 0 0-1.7L9.53 4.75A1 1 0 0 0 8 5.6Z"/></svg><svg class="ico-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1.3"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.3"/></svg></button>
               <div class="trim-times">
                 <div><span>Início</span><b id="trimStartLabel">00:00</b></div>
                 <div><span>Fim</span><b id="trimEndLabel">00:00</b></div>
@@ -694,7 +694,7 @@
 
     /* ---------- reprodução ---------- */
     function setPlayingUI(on){
-      playBtn.textContent = on ? '❚❚' : '▶';
+      playBtn.classList.toggle('is-playing', on);
       playBtn.setAttribute('aria-label', on ? 'Parar' : 'Ouvir trecho');
       playhead.hidden = !on;
       $('trim').classList.toggle('playing', on);
@@ -1108,7 +1108,7 @@
   let pvPlaying = false;
   function setPreviewPlayingUI(on){
     pvPlaying = on;
-    document.getElementById('pvPlayBtn').textContent = on ? '❚❚' : '▶';
+    document.getElementById('pvPlayBtn').classList.toggle('is-playing', on);
     document.getElementById('pvPlayBtn').setAttribute('aria-label', on ? 'Parar trecho' : 'Tocar trecho');
     document.getElementById('pvEq').classList.toggle('paused', !on);
   }

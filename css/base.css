@@ -11,8 +11,8 @@
   --rose:#C97B84;
   --rose-deep:#A85763;
   --gold:#B08947;
-  --plum:#362331;
-  --plum-deep:#251722;
+  --forest:#2F3B2C;      /* verde-eucalipto: fundo do cartão e do player */
+  --forest-deep:#1D251B;
   --radius-lg:22px;
   --radius-md:14px;
   --shadow-soft:0 18px 40px -18px rgba(43,42,37,0.35);
@@ -22,3 +22,20 @@
 
 /* [hidden] esconde de verdade, mesmo em elementos com display definido no CSS */
 [hidden]{ display:none !important; }
+
+/* Botão tocar/pausar: ícones SVG centralizados; .is-playing troca ▶ por ❚❚ */
+.play-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:0; border:none; border-radius:50%; cursor:pointer;
+  background:var(--paper); color:var(--rose-deep);
+  box-shadow:0 6px 16px -6px rgba(0,0,0,0.45);
+  transition:transform .15s ease, background .15s ease;
+}
+.play-btn svg{ width:46%; height:46%; fill:currentColor; display:block; }
+.play-btn .ico-pause{ display:none; }
+.play-btn.is-playing .ico-play{ display:none; }
+.play-btn.is-playing .ico-pause{ display:block; }
+.play-btn:hover:not(:disabled){ transform:scale(1.06); background:#fff; }
+.play-btn:active:not(:disabled){ transform:scale(0.96); }
+.play-btn:disabled{ opacity:0.4; cursor:not-allowed; }
+.play-btn:focus-visible{ outline:2px solid var(--gold); outline-offset:3px; }

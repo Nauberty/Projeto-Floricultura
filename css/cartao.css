@@ -7,7 +7,7 @@ body{
   background:
     radial-gradient(circle at 20% 10%, rgba(201,123,132,0.18), transparent 45%),
     radial-gradient(circle at 85% 90%, rgba(176,137,71,0.14), transparent 40%),
-    linear-gradient(160deg, var(--plum), var(--plum-deep));
+    linear-gradient(160deg, var(--forest), var(--forest-deep));
   background-attachment:fixed;
   color:var(--ink);
   font-family:'Inter',sans-serif;
@@ -61,7 +61,7 @@ body{
 .open-btn{
   font-family:'Inter',sans-serif; font-size:16px; font-weight:600;
   padding:16px 34px; border-radius:999px; border:none; cursor:pointer;
-  background:var(--paper); color:var(--plum);
+  background:var(--paper); color:var(--forest);
   box-shadow:0 14px 30px -10px rgba(0,0,0,0.6);
   transition:transform .15s ease;
 }
@@ -83,7 +83,7 @@ body{
 .card::before{
   content:''; position:absolute; top:-9px; left:50%; transform:translateX(-50%);
   width:16px; height:16px; border-radius:50%;
-  background:var(--plum-deep); box-shadow:0 0 0 4px var(--paper);
+  background:var(--forest-deep); box-shadow:0 0 0 4px var(--paper);
 }
 .card-emojis{ position:absolute; top:16px; right:18px; font-size:20px; letter-spacing:2px; }
 .card-cat{
@@ -130,7 +130,7 @@ body{
 .music{
   position:relative; overflow:hidden; isolation:isolate;
   margin-top:20px; border-radius:16px; padding:14px 14px 12px; color:#fff;
-  background:var(--plum-deep);
+  background:var(--forest-deep);
 }
 .music-bg{
   position:absolute; inset:-30px; z-index:-1;
@@ -139,18 +139,14 @@ body{
 }
 .music::after{
   content:''; position:absolute; inset:0; z-index:-1;
-  background:linear-gradient(160deg, rgba(54,35,49,0.5), rgba(37,23,34,0.8));
+  background:linear-gradient(160deg, rgba(47,59,44,0.5), rgba(29,37,27,0.8));
 }
 .music-row{ display:flex; align-items:center; gap:12px; }
 .music-thumb{ width:52px; height:52px; flex:none; border-radius:10px; object-fit:cover; box-shadow:0 6px 16px rgba(0,0,0,0.4); }
 .music-meta{ flex:1; min-width:0; line-height:1.3; }
 .music-title{ font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .music-sub{ font-size:12px; color:rgba(255,255,255,0.65); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.music-play{
-  width:46px; height:46px; flex:none; border-radius:50%; border:none; cursor:pointer;
-  background:#fff; color:var(--plum); font-size:15px; box-shadow:0 8px 20px -6px rgba(0,0,0,0.5);
-}
-.music-play:focus-visible{ outline:2px solid var(--gold); outline-offset:3px; }
+.music-play{ width:46px; height:46px; flex:none; } /* aparência em .play-btn (base.css) */
 .music-progress{ height:5px; border-radius:999px; background:rgba(255,255,255,0.2); margin-top:14px; overflow:hidden; }
 .music-progress-fill{
   height:100%; width:100%; border-radius:999px; transform-origin:left; transform:scaleX(0);
