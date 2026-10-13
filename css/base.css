@@ -1,0 +1,24 @@
+/* Floricultura Alameda — base compartilhada pelo criador e pela página do cartão */
+
+:root{
+  --paper:#FAF6ED;
+  --paper-deep:#F0E7D3;
+  --paper-edge:#E4D8BC;
+  --ink:#2B2A25;
+  --ink-soft:#6b6759;
+  --sage:#6E7F5C;
+  --sage-deep:#4E5C41;
+  --rose:#C97B84;
+  --rose-deep:#A85763;
+  --gold:#B08947;
+  --plum:#362331;
+  --plum-deep:#251722;
+  --radius-lg:22px;
+  --radius-md:14px;
+  --shadow-soft:0 18px 40px -18px rgba(43,42,37,0.35);
+}
+
+*{ box-sizing:border-box; }
+
+/* [hidden] esconde de verdade, mesmo em elementos com display definido no CSS */
+[hidden]{ display:none !important; }

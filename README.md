@@ -26,18 +26,29 @@ O `config.js` está no `.gitignore` — a chave nunca vai para o GitHub. Restrin
 
 ## Estrutura
 
-| Arquivo | O que é |
-|---|---|
-| `index.html` | Assistente de criação (10 passos) com pré-visualização em tempo real |
-| `cartao.html` | Página que quem recebe abre: envelope → cartão, galeria de fotos, música |
-| `js/cartao-shared.js` | Código comum: link do cartão, categorias, contador de datas, armazenamento |
-| `scripts/servidor.js` | Servidor local sem dependências (`npm start`) |
+```
+├── index.html            Criador do cartão (só a estrutura)
+├── cartao.html           Página que quem recebe abre (só a estrutura)
+├── css/
+│   ├── base.css          Cores, fontes e regras comuns às duas páginas
+│   ├── criador.css       Visual do criador
+│   └── cartao.css        Visual da página do cartão
+├── js/
+│   ├── compartilhado.js  Link do cartão, categorias, contador de datas, armazenamento
+│   ├── criador.js        Assistente, prévia, barra da música, link final e QR code
+│   └── cartao.js         Envelope, galeria, música da página do cartão
+├── scripts/servidor.js   Servidor local sem dependências (npm start)
+├── config.example.js     Modelo de configuração (copie para config.js)
+└── package.json
+```
+
+O HTML não tem nenhum estilo ou script embutido: todo o visual está em `css/` e toda a lógica em `js/`.
 
 ## Como o link funciona (sem servidor)
 
 Os dados de texto do cartão vão **compactados dentro do próprio link**, depois do `#`. O trecho depois do `#` nunca é enviado a servidor nenhum, então o link abre em qualquer aparelho e o conteúdo fica privado. O contato do remetente **não** vai no link.
 
-**Limitação atual:** as fotos são grandes demais para um link e ficam salvas só no aparelho onde o cartão foi criado (`localStorage`). Para que cheguem a quem recebe, o próximo passo é trocar o `CardStore` de `js/cartao-shared.js` por um backend (Supabase, Firebase etc.), o que também permite links curtos como `/cartao/joana-e-marcos`.
+**Limitação atual:** as fotos são grandes demais para um link e ficam salvas só no aparelho onde o cartão foi criado (`localStorage`). Para que cheguem a quem recebe, o próximo passo é trocar o `CardStore` de `js/compartilhado.js` por um backend (Supabase, Firebase etc.), o que também permite links curtos como `/cartao/joana-e-marcos`.
 
 ## Recursos
 
