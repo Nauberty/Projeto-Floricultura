@@ -12,8 +12,9 @@
     slugRaw: '',
     slug: '',
     title: '',
-    senderName: '',
-    senderContact: '',
+    senderName: '',   // nome completo do comprador (assina o cartão)
+    buyerEmail: '',
+    buyerPhone: '',
     category: '',
     hasDate: false,
     eventDate: '',
@@ -141,19 +142,31 @@
 
     if(current === 2){
       html = wrap('De quem é este cartão',
-        'Assim quem recebe sabe quem enviou o carinho.',
+        'Preencha seus dados de comprador. Assim quem recebe sabe quem enviou o carinho, e a floricultura consegue falar com você sobre o pedido.',
         `
-        <div class="row2">
+        <form class="buyer-form" id="buyerForm" novalidate>
           <div class="field">
-            <label class="field-label">Seu nome</label>
-            <input type="text" id="inpSenderName" maxlength="60" placeholder="Ex: Marcos" value="${escapeHtml(state.senderName)}">
+            <label class="field-label" for="inpBuyerName">Nome completo <span class="req" aria-hidden="true">*</span></label>
+            <input type="text" id="inpBuyerName" name="name" autocomplete="name" maxlength="80" required
+              placeholder="Ex: Marcos Oliveira" aria-describedby="errBuyerName" value="${escapeHtml(state.senderName)}">
+            <div class="field-error" id="errBuyerName" role="alert"></div>
           </div>
-          <div class="field">
-            <label class="field-label">Contato (opcional)</label>
-            <input type="tel" id="inpSenderContact" maxlength="80" placeholder="WhatsApp ou e-mail" value="${escapeHtml(state.senderContact)}">
+          <div class="row2">
+            <div class="field">
+              <label class="field-label" for="inpBuyerEmail">E-mail <span class="req" aria-hidden="true">*</span></label>
+              <input type="email" id="inpBuyerEmail" name="email" autocomplete="email" inputmode="email" maxlength="120" required
+                placeholder="voce@email.com" aria-describedby="errBuyerEmail" value="${escapeHtml(state.buyerEmail)}">
+              <div class="field-error" id="errBuyerEmail" role="alert"></div>
+            </div>
+            <div class="field">
+              <label class="field-label" for="inpBuyerPhone">Telefone / WhatsApp <span class="req" aria-hidden="true">*</span></label>
+              <input type="tel" id="inpBuyerPhone" name="phone" autocomplete="tel-national" inputmode="tel" maxlength="15" required
+                placeholder="(11) 91234-5678" aria-describedby="errBuyerPhone" value="${escapeHtml(state.buyerPhone)}">
+              <div class="field-error" id="errBuyerPhone" role="alert"></div>
+            </div>
           </div>
-        </div>
-        <div class="hint">O nome assina o cartão. O contato é só para a floricultura falar com você — ele não vai no link nem aparece para quem recebe.</div>
+        </form>
+        <div class="hint"><span class="req">*</span> Campos obrigatórios. Seu nome assina o cartão. O e-mail e o telefone ficam só com a floricultura: eles não vão no link e não aparecem para quem recebe.</div>
         `);
     }
 
@@ -347,10 +360,7 @@
     }
 
     if(current === 2){
-      const n = document.getElementById('inpSenderName');
-      const c = document.getElementById('inpSenderContact');
-      n.addEventListener('input', () => { state.senderName = n.value; renderPreview(); });
-      c.addEventListener('input', () => { state.senderContact = c.value; renderPreview(); });
+      bindBuyerForm();
     }
 
     if(current === 3){
@@ -922,13 +932,14 @@
       current = Math.min(Math.max(0, data.current | 0), FINAL_INDEX);
       if(current > 0 && !state.slug) current = 0;
       if(current > 1 && !state.title) current = 1;
+      if(current > 2 && !validateBuyer(false)) current = 2; // rascunho antigo, sem cadastro completo
     } catch(e){ /* rascunho corrompido: começa do zero */ }
   }
 
   function resetCard(){
     try{ localStorage.removeItem(DRAFT_KEY); } catch(e){}
     Object.assign(state, {
-      id: newCardId(), slugRaw: '', slug: '', title: '', senderName: '', senderContact: '',
+      id: newCardId(), slugRaw: '', slug: '', title: '', senderName: '', buyerEmail: '', buyerPhone: '',
       category: '', hasDate: false, eventDate: '', message: '', msgStyle: 'sans',
       photos: [], emojis: [], music: null,
     });
@@ -1143,6 +1154,108 @@
     if(current > 0){ current--; render(); }
   });
 
+  /* ---------------- CADASTRO DO COMPRADOR (passo 3) ---------------- */
+  const onlyDigits = (s) => String(s || '').replace(/\D/g, '');
+
+  // (11) 91234-5678 para celular, (11) 3123-4567 para fixo — formata enquanto digita
+  function formatPhone(value){
+    const d = onlyDigits(value).slice(0, 11);
+    if(d.length <= 2) return d.length ? `(${d}` : '';
+    const ddd = d.slice(0, 2), rest = d.slice(2);
+    if(rest.length <= 4) return `(${ddd}) ${rest}`;
+    const split = d.length === 11 ? 5 : 4;
+    return `(${ddd}) ${rest.slice(0, split)}-${rest.slice(split)}`;
+  }
+
+  // Cada regra devolve a mensagem de erro, ou '' se o valor estiver certo
+  const BUYER_FIELDS = {
+    name: {
+      input: 'inpBuyerName', error: 'errBuyerName', key: 'senderName',
+      check(v){
+        const t = v.trim().replace(/\s+/g, ' ');
+        if(!t) return 'Informe seu nome completo.';
+        if(t.split(' ').length < 2 || t.length < 5) return 'Informe nome e sobrenome.';
+        if(/\d/.test(t)) return 'O nome não pode ter números.';
+        return '';
+      },
+    },
+    email: {
+      input: 'inpBuyerEmail', error: 'errBuyerEmail', key: 'buyerEmail',
+      check(v){
+        const t = v.trim();
+        if(!t) return 'Informe seu e-mail.';
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t)) return 'Confira o e-mail — ex: voce@email.com';
+        return '';
+      },
+    },
+    phone: {
+      input: 'inpBuyerPhone', error: 'errBuyerPhone', key: 'buyerPhone',
+      check(v){
+        const d = onlyDigits(v);
+        if(!d) return 'Informe seu telefone com DDD.';
+        if(d.length < 10) return 'Telefone incompleto — inclua o DDD.';
+        if(d[0] === '0' || d[1] === '0') return 'DDD inválido.';
+        if(d.length === 11 && d[2] !== '9') return 'Celular deve começar com 9 depois do DDD.';
+        return '';
+      },
+    },
+  };
+
+  function showFieldError(field, msg){
+    const input = document.getElementById(field.input);
+    const box = document.getElementById(field.error);
+    if(!input || !box) return;
+    box.textContent = msg;
+    input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+  }
+
+  // Valida tudo; com "show" mostra os erros e foca o primeiro campo errado
+  function validateBuyer(show){
+    let firstBad = null;
+    for(const field of Object.values(BUYER_FIELDS)){
+      const msg = field.check(state[field.key] || '');
+      if(show) showFieldError(field, msg);
+      if(msg && !firstBad) firstBad = field;
+    }
+    if(show && firstBad) document.getElementById(firstBad.input).focus();
+    return !firstBad;
+  }
+
+  function bindBuyerForm(){
+    for(const field of Object.values(BUYER_FIELDS)){
+      const input = document.getElementById(field.input);
+      let touched = !!state[field.key];
+
+      input.addEventListener('input', () => {
+        if(field.key === 'buyerPhone'){
+          // Mantém o cursor no lugar certo depois da máscara
+          const digitsBefore = onlyDigits(input.value.slice(0, input.selectionStart)).length;
+          input.value = formatPhone(input.value);
+          let pos = 0, seen = 0;
+          while(pos < input.value.length && seen < digitsBefore){ if(/\d/.test(input.value[pos])) seen++; pos++; }
+          input.setSelectionRange(pos, pos);
+        }
+        state[field.key] = input.value;
+        // Depois do primeiro erro, o aviso some assim que o valor fica certo
+        if(input.getAttribute('aria-invalid') === 'true') showFieldError(field, field.check(input.value));
+        if(field.key === 'senderName') renderPreview();
+        else saveDraft();
+      });
+
+      // Mostra o erro ao sair do campo, só se a pessoa já digitou algo nele
+      input.addEventListener('blur', () => {
+        if(input.value.trim()) touched = true;
+        if(touched) showFieldError(field, field.check(input.value));
+      });
+    }
+
+    // Enter no formulário avança, como o botão "Próximo"
+    document.getElementById('buyerForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      document.getElementById('btnNext').click();
+    });
+  }
+
   function validateStep(){
     if(current === 0 && state.slug.length < 3) return 'Escolha um nome com pelo menos 3 letras ou números.';
     if(current === 1 && !state.title.trim()) return 'Dê um título ao seu cartão antes de continuar.';
@@ -1150,6 +1263,7 @@
   }
 
   document.getElementById('btnNext').addEventListener('click', () => {
+    if(current === 2 && !validateBuyer(true)) return; // erros aparecem em cada campo
     const error = validateStep();
     if(error){
       showStepError(error);
