@@ -12,9 +12,11 @@
     slugRaw: '',
     slug: '',
     title: '',
-    senderName: '',   // nome completo do comprador (assina o cartão)
+    buyerName: '',    // nome completo do comprador (só para a floricultura)
     buyerEmail: '',
     buyerPhone: '',
+    signName: '',     // como a pessoa quer assinar o cartão
+    signClosing: 'Com carinho,',
     category: '',
     hasDate: false,
     eventDate: '',
@@ -31,6 +33,7 @@
     { key:'slug', label:'Nome da Página' },
     { key:'title', label:'Título do Cartão' },
     { key:'contact', label:'De quem é' },
+    { key:'signature', label:'Assinatura' },
     { key:'category', label:'Categoria' },
     { key:'date', label:'Data Especial' },
     { key:'message', label:'Mensagem' },
@@ -40,6 +43,7 @@
     { key:'final', label:'Link Pronto' },
   ];
   const FINAL_INDEX = STEPS.length - 1;
+  const stepIndex = (key) => STEPS.findIndex(st => st.key === key);
 
   let current = 0;
 
@@ -84,6 +88,7 @@
     "M112 118c-3-8-9-13-16-15c0 6 0 13-3 18c7 0 14-1 19-3Z",
     "M118 128c-1-8-6-14-12-18c-1 7-3 13-7 18c6 1 13 1 19 0Z",
     "M124 137c0-9-4-16-11-21c-2 7-6 13-11 17c7 3 15 5 22 4Z",
+    "M130 146c1-8-2-15-8-20c-3 6-7 11-13 14c7 4 14 6 21 6Z",
   ];
   function renderSprig(){
     const g = document.getElementById('sprig-leaves');
@@ -112,10 +117,11 @@
 
   function renderStepContent(){
     if(musicUI){ musicUI.destroy(); musicUI = null; }
+    const step = STEPS[current].key;
     const c = document.getElementById('step-content');
     let html = '';
 
-    if(current === 0){
+    if(step === 'slug'){
       html = wrap('Nome da Página',
         'Escolha o endereço único do seu cartão — é o que vai aparecer no link enviado.',
         `
@@ -128,7 +134,7 @@
         `);
     }
 
-    if(current === 1){
+    if(step === 'title'){
       html = wrap('Título do Cartão',
         'O título que vai aparecer em destaque, logo no topo do cartão.',
         `
@@ -140,15 +146,15 @@
         `);
     }
 
-    if(current === 2){
+    if(step === 'contact'){
       html = wrap('De quem é este cartão',
-        'Preencha seus dados de comprador. Assim quem recebe sabe quem enviou o carinho, e a floricultura consegue falar com você sobre o pedido.',
+        'Seus dados de comprador, para a floricultura confirmar e acompanhar o pedido com você.',
         `
         <form class="buyer-form" id="buyerForm" novalidate>
           <div class="field">
             <label class="field-label" for="inpBuyerName">Nome completo <span class="req" aria-hidden="true">*</span></label>
             <input type="text" id="inpBuyerName" name="name" autocomplete="name" maxlength="80" required
-              placeholder="Ex: Marcos Oliveira" aria-describedby="errBuyerName" value="${escapeHtml(state.senderName)}">
+              placeholder="Ex: Marcos Oliveira" aria-describedby="errBuyerName" value="${escapeHtml(state.buyerName)}">
             <div class="field-error" id="errBuyerName" role="alert"></div>
           </div>
           <div class="row2">
@@ -166,17 +172,41 @@
             </div>
           </div>
         </form>
-        <div class="hint"><span class="req">*</span> Campos obrigatórios. Seu nome assina o cartão. O e-mail e o telefone ficam só com a floricultura: eles não vão no link e não aparecem para quem recebe.</div>
+        <div class="hint"><span class="req">*</span> Campos obrigatórios. Esses dados ficam só com a floricultura, para falar com você sobre o pedido: eles <b>não aparecem no cartão</b>. No próximo passo você escolhe como assinar.</div>
         `);
     }
 
-    if(current === 3){
+    if(step === 'signature'){
+      html = wrap('Como você quer assinar?',
+        'É assim que seu nome vai aparecer no final do cartão. Pode ser um apelido, um nome carinhoso ou o nome de um grupo, do jeito que quem recebe vai reconhecer você.',
+        `
+        <label class="field-label">Despedida</label>
+        <div class="chip-grid closing-grid" id="closingGrid" role="radiogroup" aria-label="Despedida"></div>
+
+        <div class="field sign-field">
+          <label class="field-label" for="inpSignName">Assinado por <span class="req" aria-hidden="true">*</span></label>
+          <input type="text" id="inpSignName" maxlength="40" required autocomplete="off"
+            placeholder="Ex: Marcos, Mãe, Seu amor, Família Silva" aria-describedby="errSignName" value="${escapeHtml(state.signName)}">
+          <div class="field-error" id="errSignName" role="alert"></div>
+          <div class="charcount" id="signCount">0/40</div>
+        </div>
+        <div class="sign-suggestions" id="signSuggestions"></div>
+
+        <div class="sign-sample" aria-live="polite">
+          <span class="sign-sample-label">Assim vai ficar no cartão</span>
+          <div class="sign-sample-closing" id="signSampleClosing"></div>
+          <div class="sign-sample-name" id="signSampleName"></div>
+        </div>
+        `);
+    }
+
+    if(step === 'category'){
       html = wrap('Categoria',
         'Isso ajusta o tom do cartão e sugere flores combinando com a ocasião.',
         `<div class="chip-grid" id="catGrid"></div>`);
     }
 
-    if(current === 4){
+    if(step === 'date'){
       html = wrap('Data Especial',
         'Quer mostrar um contador no cartão? Datas passadas mostram "há quanto tempo" (ex: 3 anos juntos); datas futuras mostram quanto falta.',
         `
@@ -192,7 +222,7 @@
         `);
     }
 
-    if(current === 5){
+    if(step === 'message'){
       html = wrap('Mensagem',
         'Escreva o recado com carinho. Você também escolhe o estilo da letra.',
         `
@@ -208,7 +238,7 @@
         `);
     }
 
-    if(current === 6){
+    if(step === 'photos'){
       html = wrap('Fotos',
         'Adicione até 4 fotos para acompanhar o cartão. A primeira aparece em destaque.',
         `
@@ -222,13 +252,13 @@
         `);
     }
 
-    if(current === 7){
+    if(step === 'emoji'){
       html = wrap('Selo / Emoji',
         'Escolha até 3 emojis para decorar o canto do cartão, como um selo.',
         `<div class="emoji-grid" id="emojiGrid"></div>`);
     }
 
-    if(current === 8){
+    if(step === 'music'){
       const m = state.music;
       html = wrap('Escolha uma música',
         'Cole o link de uma música do YouTube e escolha o trecho que vai tocar quando abrirem o cartão.',
@@ -327,8 +357,9 @@
 
   /* ---------------- BIND EVENTS PER STEP ---------------- */
   function bindStepEvents(){
+    const step = STEPS[current].key;
 
-    if(current === 0){
+    if(step === 'slug'){
       const inp = document.getElementById('inpSlug');
       const count = document.getElementById('slugCount');
       const result = document.getElementById('slugResult');
@@ -346,7 +377,7 @@
       update();
     }
 
-    if(current === 1){
+    if(step === 'title'){
       const inp = document.getElementById('inpTitle');
       const count = document.getElementById('titleCount');
       const update = () => {
@@ -359,11 +390,15 @@
       update();
     }
 
-    if(current === 2){
+    if(step === 'contact'){
       bindBuyerForm();
     }
 
-    if(current === 3){
+    if(step === 'signature'){
+      bindSignatureStep();
+    }
+
+    if(step === 'category'){
       const grid = document.getElementById('catGrid');
       grid.innerHTML = '';
       CATEGORIES.forEach(cat => {
@@ -377,7 +412,7 @@
       });
     }
 
-    if(current === 4){
+    if(step === 'date'){
       const sw = document.getElementById('dateSwitch');
       const field = document.getElementById('dateField');
       sw.addEventListener('click', () => {
@@ -392,7 +427,7 @@
       }
     }
 
-    if(current === 5){
+    if(step === 'message'){
       const pills = document.querySelectorAll('.style-pill');
       pills.forEach(p => {
         p.classList.toggle('selected', p.dataset.style === state.msgStyle);
@@ -413,7 +448,7 @@
       update();
     }
 
-    if(current === 6){
+    if(step === 'photos'){
       const dz = document.getElementById('dropzone');
       const input = document.getElementById('fileInput');
       dz.addEventListener('click', () => input.click());
@@ -434,7 +469,7 @@
       renderThumbs();
     }
 
-    if(current === 7){
+    if(step === 'emoji'){
       const grid = document.getElementById('emojiGrid');
       grid.innerHTML = '';
       EMOJIS.forEach(em => {
@@ -452,7 +487,7 @@
       });
     }
 
-    if(current === 8){
+    if(step === 'music'){
       bindMusicStep();
     }
 
@@ -930,16 +965,28 @@
       if(!data || !data.state) return;
       Object.assign(state, data.state);
       current = Math.min(Math.max(0, data.current | 0), FINAL_INDEX);
-      if(current > 0 && !state.slug) current = 0;
-      if(current > 1 && !state.title) current = 1;
-      if(current > 2 && !validateBuyer(false)) current = 2; // rascunho antigo, sem cadastro completo
+      // Rascunho da versão anterior: o nome do cadastro também era a assinatura
+      if(data.state.senderName && !state.buyerName) state.buyerName = data.state.senderName;
+      delete state.senderName; delete state.senderContact;
+      // Não deixa abrir num passo além do primeiro que ainda está incompleto
+      const gates = [
+        ['slug', () => state.slug],
+        ['title', () => state.title],
+        ['contact', () => validateBuyer(false)],
+        ['signature', () => validateSignature(false)],
+      ];
+      for(const [key, ok] of gates){
+        const i = stepIndex(key);
+        if(current > i && !ok()){ current = i; break; }
+      }
     } catch(e){ /* rascunho corrompido: começa do zero */ }
   }
 
   function resetCard(){
     try{ localStorage.removeItem(DRAFT_KEY); } catch(e){}
     Object.assign(state, {
-      id: newCardId(), slugRaw: '', slug: '', title: '', senderName: '', buyerEmail: '', buyerPhone: '',
+      id: newCardId(), slugRaw: '', slug: '', title: '', buyerName: '', buyerEmail: '', buyerPhone: '',
+      signName: '', signClosing: 'Com carinho,',
       category: '', hasDate: false, eventDate: '', message: '', msgStyle: 'sans',
       photos: [], emojis: [], music: null,
     });
@@ -974,7 +1021,8 @@
       id: state.id,
       slug: state.slug,
       title: state.title.trim(),
-      from: state.senderName.trim(),
+      from: state.signName.trim(),
+      closing: state.signClosing,
       category: state.category,
       date: state.hasDate && state.eventDate ? state.eventDate : null,
       message: state.message,
@@ -1094,7 +1142,7 @@
     setIfChanged(msg, 'textContent', state.message || 'Sua mensagem vai aparecer aqui conforme você escreve…');
     setIfChanged(msg, 'className', 'card-msg' + (state.msgStyle === 'serif' ? ' style-serif' : state.msgStyle === 'script' ? ' style-script' : ''));
 
-    setIfChanged($('pvFrom'), 'innerHTML', `Com carinho, <b>${escapeHtml(state.senderName.trim() || 'seu nome')}</b>`);
+    setIfChanged($('pvFrom'), 'innerHTML', `${escapeHtml(state.signClosing || 'Com carinho,')} <b>${escapeHtml(state.signName.trim() || 'sua assinatura')}</b>`);
     setIfChanged($('pvEmojis'), 'textContent', state.emojis.join(' '));
 
     const m = state.music;
@@ -1170,7 +1218,7 @@
   // Cada regra devolve a mensagem de erro, ou '' se o valor estiver certo
   const BUYER_FIELDS = {
     name: {
-      input: 'inpBuyerName', error: 'errBuyerName', key: 'senderName',
+      input: 'inpBuyerName', error: 'errBuyerName', key: 'buyerName',
       check(v){
         const t = v.trim().replace(/\s+/g, ' ');
         if(!t) return 'Informe seu nome completo.';
@@ -1238,8 +1286,7 @@
         state[field.key] = input.value;
         // Depois do primeiro erro, o aviso some assim que o valor fica certo
         if(input.getAttribute('aria-invalid') === 'true') showFieldError(field, field.check(input.value));
-        if(field.key === 'senderName') renderPreview();
-        else saveDraft();
+        saveDraft();
       });
 
       // Mostra o erro ao sair do campo, só se a pessoa já digitou algo nele
@@ -1256,14 +1303,111 @@
     });
   }
 
+  /* ---------------- ASSINATURA (como o nome aparece no cartão) ---------------- */
+  const CLOSINGS = [
+    'Com carinho,', 'Com amor,', 'Com todo o meu amor,', 'Um beijo,',
+    'Um abraço,', 'Com gratidão,', 'Com saudade,', 'Com sentimentos,',
+  ];
+
+  function signatureError(v){
+    const t = String(v || '').trim();
+    if(!t) return 'Escreva como você quer assinar o cartão.';
+    if(t.length < 2) return 'A assinatura precisa ter pelo menos 2 letras.';
+    return '';
+  }
+
+  function validateSignature(show){
+    const msg = signatureError(state.signName);
+    if(show){
+      const input = document.getElementById('inpSignName');
+      const box = document.getElementById('errSignName');
+      if(input && box){
+        box.textContent = msg;
+        input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+        if(msg) input.focus();
+      }
+    }
+    return !msg;
+  }
+
+  function bindSignatureStep(){
+    const input = document.getElementById('inpSignName');
+    const count = document.getElementById('signCount');
+    const grid = document.getElementById('closingGrid');
+    const sugBox = document.getElementById('signSuggestions');
+
+    const paintSample = () => {
+      document.getElementById('signSampleClosing').textContent = state.signClosing;
+      document.getElementById('signSampleName').textContent = state.signName.trim() || 'sua assinatura';
+      document.getElementById('signSampleName').classList.toggle('is-empty', !state.signName.trim());
+      count.textContent = `${state.signName.length}/40`;
+    };
+
+    // Despedidas: um grupo de opções, só uma marcada
+    CLOSINGS.forEach(text => {
+      const chip = el('button', 'chip' + (state.signClosing === text ? ' selected' : ''));
+      chip.type = 'button';
+      chip.setAttribute('role', 'radio');
+      chip.setAttribute('aria-checked', state.signClosing === text ? 'true' : 'false');
+      chip.textContent = text;
+      chip.addEventListener('click', () => {
+        state.signClosing = text;
+        grid.querySelectorAll('.chip').forEach(c => {
+          const on = c === chip;
+          c.classList.toggle('selected', on);
+          c.setAttribute('aria-checked', on ? 'true' : 'false');
+        });
+        paintSample();
+        renderPreview();
+      });
+      grid.appendChild(chip);
+    });
+
+    // Sugestões rápidas a partir do cadastro (sem preencher sozinho: a pessoa escolhe)
+    const first = state.buyerName.trim().split(/\s+/)[0] || '';
+    const suggestions = [...new Set([first, state.buyerName.trim()].filter(Boolean))];
+    if(suggestions.length){
+      sugBox.innerHTML = '<span>Usar:</span>';
+      suggestions.forEach(name => {
+        const b = el('button', 'sign-suggestion');
+        b.type = 'button';
+        b.textContent = name;
+        b.addEventListener('click', () => {
+          input.value = name;
+          input.dispatchEvent(new Event('input'));
+          input.focus();
+        });
+        sugBox.appendChild(b);
+      });
+    }
+
+    input.addEventListener('input', () => {
+      state.signName = input.value.slice(0, 40);
+      if(input.getAttribute('aria-invalid') === 'true'){
+        const msg = signatureError(state.signName);
+        document.getElementById('errSignName').textContent = msg;
+        input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+      }
+      paintSample();
+      renderPreview();
+    });
+    input.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnNext').click(); }
+    });
+
+    paintSample();
+  }
+
   function validateStep(){
-    if(current === 0 && state.slug.length < 3) return 'Escolha um nome com pelo menos 3 letras ou números.';
-    if(current === 1 && !state.title.trim()) return 'Dê um título ao seu cartão antes de continuar.';
+    const step = STEPS[current].key;
+    if(step === 'slug' && state.slug.length < 3) return 'Escolha um nome com pelo menos 3 letras ou números.';
+    if(step === 'title' && !state.title.trim()) return 'Dê um título ao seu cartão antes de continuar.';
     return null;
   }
 
   document.getElementById('btnNext').addEventListener('click', () => {
-    if(current === 2 && !validateBuyer(true)) return; // erros aparecem em cada campo
+    if(STEPS[current].key === 'contact' && !validateBuyer(true)) return; // erros aparecem em cada campo
+    if(STEPS[current].key === 'signature' && !validateSignature(true)) return;
     const error = validateStep();
     if(error){
       showStepError(error);

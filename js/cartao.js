@@ -60,7 +60,9 @@
 
     if(card.from){
       $('cFrom').hidden = false;
-      $('cFrom').innerHTML = `Com carinho,<br><b>${escapeHtml(card.from)}</b>`;
+      // Cartões antigos não têm "closing": usam a despedida padrão
+      const closing = typeof card.closing === 'string' && card.closing.trim() ? card.closing.trim().slice(0, 40) : 'Com carinho,';
+      $('cFrom').innerHTML = `${escapeHtml(closing)}<br><b>${escapeHtml(card.from)}</b>`;
     }
 
     renderGallery();
